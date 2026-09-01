@@ -4,7 +4,7 @@ import { getAnomalies } from "../utils/helpers.js";
 
 const SEV_RANK = { high: 2, medium: 1, low: 0 };
 
-export default function AnomalyPanel({ equipment, telemetry = [], maintenance = [] }) {
+export default function AnomalyPanel({ equipment, telemetry = [], maintenance = [], bookings = [] }) {
   const telMap = {};
   telemetry.forEach((t) => {
     telMap[t.equipmentId] = t;
@@ -13,7 +13,7 @@ export default function AnomalyPanel({ equipment, telemetry = [], maintenance = 
   // One group per flagged machine — never repeat the same equipment ID.
   const groups = [];
   equipment.forEach((eq) => {
-    const flags = getAnomalies(eq, { telemetry: telMap[eq.equipmentId], maintenance });
+    const flags = getAnomalies(eq, { telemetry: telMap[eq.equipmentId], maintenance, bookings });
     if (!flags.length) return;
     const worst = flags.reduce(
       (s, f) => (SEV_RANK[f.severity] > SEV_RANK[s] ? f.severity : s),

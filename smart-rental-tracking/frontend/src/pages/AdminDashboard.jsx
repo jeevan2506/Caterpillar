@@ -66,8 +66,11 @@ export default function AdminDashboard() {
   const anomalyCount = data.equipment.reduce(
     (n, eq) =>
       n +
-      getAnomalies(eq, { telemetry: telMap[eq.equipmentId], maintenance: data.maintenance })
-        .length,
+      getAnomalies(eq, {
+        telemetry: telMap[eq.equipmentId],
+        maintenance: data.maintenance,
+        bookings: data.bookings,
+      }).length,
     0
   );
   const activeCount = data.equipment.filter((eq) => displayStatus(eq) === "active").length;
@@ -186,10 +189,11 @@ export default function AdminDashboard() {
               </div>
               <div className="card p-5">
                 <AnomalyPanel
-                equipment={data.equipment}
-                telemetry={data.telemetry}
-                maintenance={data.maintenance}
-              />
+                  equipment={data.equipment}
+                  telemetry={data.telemetry}
+                  maintenance={data.maintenance}
+                  bookings={data.bookings}
+                />
               </div>
             </div>
           )}
@@ -212,6 +216,7 @@ export default function AdminDashboard() {
                 equipment={data.equipment}
                 telemetry={data.telemetry}
                 maintenance={data.maintenance}
+                bookings={data.bookings}
               />
             </div>
           )}

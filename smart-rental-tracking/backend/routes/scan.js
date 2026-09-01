@@ -77,6 +77,12 @@ router.post("/confirm-pickup", async (req, res) => {
     booking.checkOutDate = now;
     booking.expectedReturnDate = expectedReturn;
     booking.qrStatus = "checked-out";
+    booking.overdueSmsSent = false;
+    booking.overdueSmsSentAt = null;
+    booking.dueSoonSmsSent = false;
+    booking.dueSoonSmsSentAt = null;
+    booking.lastSmsStatus = null;
+    booking.lastSmsError = null;
 
     equipment.checkOutDate = now;
     equipment.checkInDate = expectedReturn; // expected return date (drives overdue / due-soon)

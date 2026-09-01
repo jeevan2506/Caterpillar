@@ -41,6 +41,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Server error", error: err.message });
 });
 
+const { startAlertScheduler } = require("./services/alertService");
+
 const PORT = process.env.PORT || 5000;
 const MONGO_URI =
   process.env.MONGO_URI || "mongodb://127.0.0.1:27017/smart-rental-tracking";
@@ -49,6 +51,7 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("Connected to MongoDB");
+    startAlertScheduler();
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => {

@@ -185,6 +185,18 @@ export default function AdminScanner({ onChange }) {
                   value={new Date(result.booking.expectedReturnDate).toLocaleDateString()}
                 />
               )}
+              {result.booking.overdueSmsSent && (
+                <Field
+                  label="SMS Alert"
+                  value={
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                      Dispatched
+                      {result.booking.overdueSmsSentAt &&
+                        ` (${new Date(result.booking.overdueSmsSentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`}
+                    </span>
+                  }
+                />
+              )}
               {result.equipment && (
                 <>
                   <Field

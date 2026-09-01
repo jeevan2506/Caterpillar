@@ -23,6 +23,16 @@ const bookingSchema = new mongoose.Schema({
   checkOutDate: { type: Date, default: null },
   expectedReturnDate: { type: Date, default: null },
   checkInDate: { type: Date, default: null },
+  overdueSmsSent: { type: Boolean, default: false },
+  overdueSmsSentAt: { type: Date, default: null },
+  dueSoonSmsSent: { type: Boolean, default: false },
+  dueSoonSmsSentAt: { type: Date, default: null },
+  lastSmsStatus: {
+    type: String,
+    enum: ["sent", "failed", null],
+    default: null,
+  },
+  lastSmsError: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -21,7 +21,7 @@ export function displayStatus(eq) {
 // Returns a list of anomaly objects for one equipment record.
 // opts: { telemetry: <matching telemetry record>, maintenance: [<all maintenance records>] }
 export function getAnomalies(eq, opts = {}) {
-  const { telemetry = null, maintenance = [] } = opts;
+  const { telemetry = null, maintenance = [], bookings = [] } = opts;
   const flags = [];
 
   // 1. Unassigned — no site or no operator on record
@@ -110,10 +110,18 @@ export function getAnomalies(eq, opts = {}) {
 
   // 6. Rental overrun — past the expected return date, not checked back in
   if (displayStatus(eq) === "overdue") {
+    const activeBooking = bookings.find(
+      (b) => b.equipmentId === eq.equipmentId && b.qrStatus === "checked-out"
+    );
+    let smsNotice = "";
+    if (activeBooking?.overdueSmsSent) {
+      smsNotice = " · SMS alert dispatched";
+    }
     flags.push({
       type: "RENTAL OVERRUN",
-      reason: `Past expected return date (${fmtDate(eq.checkInDate)}) and not checked back in.`,
+      reason: `Past expected return date (${fmtDate(eq.checkInDate)}) and not checked back in${smsNotice}.`,
       severity: "high",
+      smsStatus: activeBooking?.lastSmsStatus,
     });
   }
 

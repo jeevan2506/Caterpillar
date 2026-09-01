@@ -103,10 +103,10 @@ const equipmentData = [
 
 // Users with plain-text passwords — will be hashed before insertion
 const rawUsers = [
-  { userId: "USR001", username: "joy",   name: "Joy",   role: "user",     password: "tom123$"   },
-  { userId: "USR002", username: "tom",   name: "Tom",   role: "user",     password: "tom123$"   },
-  { userId: "ADM001", username: "jerry", name: "Jerry", role: "admin",    password: "jerry123$" },
-  { userId: "OPR001",                    name: "Chris Bennett", role: "operator" }, // no login
+  { userId: "USR001", username: "joy",   name: "Joy",   role: "user",     phone: "+919876543210", password: "tom123$"   },
+  { userId: "USR002", username: "tom",   name: "Tom",   role: "user",     phone: "+919876543211", password: "tom123$"   },
+  { userId: "ADM001", username: "jerry", name: "Jerry", role: "admin",    phone: "+919876543212", password: "jerry123$" },
+  { userId: "OPR001",                    name: "Chris Bennett", role: "operator", phone: null }, // no login
 ];
 
 const operatorData = [
@@ -154,10 +154,10 @@ async function seed() {
     rawUsers.map(async (u) => {
       if (u.password) {
         const passwordHash = await bcrypt.hash(u.password, SALT_ROUNDS);
-        return { userId: u.userId, username: u.username, name: u.name, role: u.role, passwordHash };
+        return { userId: u.userId, username: u.username, name: u.name, role: u.role, phone: u.phone, passwordHash };
       }
       // Operator — no username/password
-      return { userId: u.userId, name: u.name, role: u.role };
+      return { userId: u.userId, name: u.name, role: u.role, phone: u.phone };
     })
   );
   await User.insertMany(usersToInsert);
