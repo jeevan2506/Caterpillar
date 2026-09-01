@@ -25,6 +25,18 @@ const equipmentTelemetrySchema = new mongoose.Schema(
       type: Number,
       default: 100,
     },
+    fuelConsumed: {
+      type: Number,
+      default: 0,
+    },
+    latitude: {
+      type: Number,
+      default: null,
+    },
+    longitude: {
+      type: Number,
+      default: null,
+    },
     siteId: {
       type: String,
       default: null,

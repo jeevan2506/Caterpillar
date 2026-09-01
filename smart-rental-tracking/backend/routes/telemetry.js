@@ -42,6 +42,9 @@ router.post("/:equipmentId?", async (req, res) => {
       engineHours,
       idleHours,
       fuelLevel,
+      fuelConsumed,
+      latitude,
+      longitude,
       siteId,
     } = req.body;
 
@@ -64,6 +67,15 @@ router.post("/:equipmentId?", async (req, res) => {
     }
     if (fuelLevel !== undefined && fuelLevel !== null && !isNaN(fuelLevel)) {
       updateFields.fuelLevel = Number(fuelLevel);
+    }
+    if (fuelConsumed !== undefined && fuelConsumed !== null && !isNaN(fuelConsumed)) {
+      updateFields.fuelConsumed = Number(fuelConsumed);
+    }
+    if (latitude !== undefined && latitude !== null && !isNaN(latitude)) {
+      updateFields.latitude = Number(latitude);
+    }
+    if (longitude !== undefined && longitude !== null && !isNaN(longitude)) {
+      updateFields.longitude = Number(longitude);
     }
     if (siteId !== undefined) {
       updateFields.siteId = siteId;

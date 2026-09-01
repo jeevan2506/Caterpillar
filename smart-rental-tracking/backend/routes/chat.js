@@ -70,6 +70,14 @@ function getAnomalies(eq, maintenance = [], telemetry = null) {
     });
   }
 
+  if (telemetry && telemetry.fuelLevel != null && telemetry.fuelLevel < 15) {
+    flags.push({
+      type: "LOW FUEL",
+      severity: "high",
+      reason: `Fuel level ${Math.round(telemetry.fuelLevel)}% — refuel required`,
+    });
+  }
+
   if (telemetry && telemetry.connectionStatus === "offline") {
     flags.push({
       type: "TELEMETRY OFFLINE",

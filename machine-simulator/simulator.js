@@ -46,9 +46,24 @@ const INTERVAL_MS = parseInt(
 );
 let MACHINE_STATUS = process.env.MACHINE_STATUS || args.status || "running";
 
+// Fuel tank capacity in litres (CAT 320-class excavator ~ 400 L)
+const FUEL_CAPACITY = parseInt(process.env.FUEL_CAPACITY || args.fuel || "400", 10);
+
+// Rough site coordinates so we can emit a plausible GPS location
+const SITE_COORDS = {
+  S001: [12.9716, 77.5946],
+  S002: [13.0827, 80.2707],
+  S003: [17.385, 78.4867],
+  S004: [19.076, 72.8777],
+  S005: [28.7041, 77.1025],
+  S006: [22.5726, 88.3639],
+};
+
 // Initial machine metric values
 let engineHours = 7.5;
 let idleHours = 1.2;
+let fuelLevel = 92; // percent of tank
+let fuelConsumed = 0; // litres burned this session (cumulative)
 let heartbeatCount = 0;
 
 console.log("==================================================");
@@ -67,19 +82,37 @@ function sendTelemetry() {
   heartbeatCount++;
 
   // Realistic simulation changes:
+  let burnPct = 0; // % of tank burned this cycle
   if (MACHINE_STATUS === "running") {
-    // Engine hours increment slowly (~0.01 per cycle)
     engineHours = parseFloat((engineHours + 0.01).toFixed(2));
+    burnPct = 1.5 + Math.random() * 0.4; // heavier burn under load
   } else if (MACHINE_STATUS === "idle") {
-    // Idle hours increment slowly (~0.01 per cycle)
     idleHours = parseFloat((idleHours + 0.01).toFixed(2));
+    burnPct = 0.3 + Math.random() * 0.1; // idling still sips fuel
   }
+
+  if (burnPct > 0) {
+    fuelConsumed = parseFloat((fuelConsumed + (burnPct / 100) * FUEL_CAPACITY).toFixed(1));
+    fuelLevel = parseFloat((fuelLevel - burnPct).toFixed(1));
+    if (fuelLevel < 15) {
+      fuelLevel = 100; // refuelled on site
+      console.log(`[${new Date().toLocaleTimeString()}] ⛽ ${EQUIPMENT_ID} refuelled -> tank full`);
+    }
+  }
+
+  const base = SITE_COORDS[SITE_ID] || [12.9716, 77.5946];
+  const latitude = parseFloat((base[0] + (Math.random() - 0.5) * 0.001).toFixed(6));
+  const longitude = parseFloat((base[1] + (Math.random() - 0.5) * 0.001).toFixed(6));
 
   const payload = {
     equipmentId: EQUIPMENT_ID,
     machineStatus: MACHINE_STATUS,
     engineHours,
     idleHours,
+    fuelLevel,
+    fuelConsumed,
+    latitude,
+    longitude,
     siteId: SITE_ID,
   };
 
@@ -108,7 +141,7 @@ function sendTelemetry() {
     res.on("end", () => {
       if (res.statusCode >= 200 && res.statusCode < 300) {
         console.log(
-          `[${timestamp}] 🟢 Heartbeat #${heartbeatCount} sent OK -> ${EQUIPMENT_ID} (${MACHINE_STATUS.toUpperCase()}) | Engine: ${engineHours}h | Idle: ${idleHours}h | Site: ${SITE_ID}`
+          `[${timestamp}] 🟢 Heartbeat #${heartbeatCount} sent OK -> ${EQUIPMENT_ID} (${MACHINE_STATUS.toUpperCase()}) | Engine: ${engineHours}h | Idle: ${idleHours}h | Fuel: ${fuelLevel}% (${fuelConsumed}L used) | Site: ${SITE_ID}`
         );
       } else {
         console.warn(

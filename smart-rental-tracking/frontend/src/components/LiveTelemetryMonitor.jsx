@@ -70,6 +70,20 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
 
   const engineHours = activeTelemetry?.engineHours ?? selectedEquipmentInfo?.engineHoursPerDay ?? 0;
   const idleHours = activeTelemetry?.idleHours ?? selectedEquipmentInfo?.idleHoursPerDay ?? 0;
+  const fuelLevel = activeTelemetry?.fuelLevel ?? null;
+  const fuelConsumed = activeTelemetry?.fuelConsumed ?? 0;
+  const location =
+    activeTelemetry?.latitude != null && activeTelemetry?.longitude != null
+      ? `${activeTelemetry.latitude.toFixed(4)}, ${activeTelemetry.longitude.toFixed(4)}`
+      : null;
+  const fuelColor =
+    fuelLevel == null
+      ? "bg-stone-300"
+      : fuelLevel < 15
+      ? "bg-red-500"
+      : fuelLevel < 40
+      ? "bg-amber-500"
+      : "bg-emerald-500";
   const siteId = activeTelemetry?.siteId || selectedEquipmentInfo?.siteId || "—";
   const equipmentType = selectedEquipmentInfo?.type || activeTelemetry?.equipmentType || "Excavator";
 
@@ -211,8 +225,8 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
               </div>
             )}
 
-            {/* Live Metrics Grid (Machine State, Engine Hours, Idle Hours) */}
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {/* Live Metrics Grid */}
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {/* Machine State */}
               <div className="rounded-xl border border-stone-200/80 bg-white p-3.5 shadow-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
@@ -278,7 +292,39 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
                   Standby / idle time
                 </p>
               </div>
+
+              {/* Fuel */}
+              <div className="rounded-xl border border-stone-200/80 bg-white p-3.5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+                    Fuel
+                  </p>
+                  <Icon name="fuel" className="h-3.5 w-3.5 text-stone-400" />
+                </div>
+                <p className="mt-1 font-display text-xl font-extrabold text-stone-900">
+                  {fuelLevel != null ? Math.round(fuelLevel) : "—"}
+                  {fuelLevel != null && (
+                    <span className="text-xs font-semibold text-stone-400">%</span>
+                  )}
+                </p>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-stone-100">
+                  <div
+                    className={`h-full rounded-full ${fuelColor}`}
+                    style={{ width: `${fuelLevel != null ? Math.max(2, fuelLevel) : 0}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-stone-400 mt-1">
+                  {fuelConsumed}L used this session
+                </p>
+              </div>
             </div>
+
+            {location && (
+              <p className="mt-2 text-[11px] text-stone-400">
+                📍 Location: <span className="font-medium text-stone-600">{location}</span>
+                {" · "}Site {siteId}
+              </p>
+            )}
 
             {/* Bottom Status Ribbon */}
             <div className="mt-4 flex flex-wrap items-center justify-between border-t border-stone-100 pt-3 text-xs text-stone-500">

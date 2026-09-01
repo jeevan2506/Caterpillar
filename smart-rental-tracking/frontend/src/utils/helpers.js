@@ -85,6 +85,15 @@ export function getAnomalies(eq, opts = {}) {
     });
   }
 
+  // 5a. Low fuel — machine will stall without a refuel
+  if (telemetry && telemetry.fuelLevel != null && telemetry.fuelLevel < 15) {
+    flags.push({
+      type: "LOW FUEL",
+      reason: `Fuel level ${Math.round(telemetry.fuelLevel)}% — refuel required.`,
+      severity: "high",
+    });
+  }
+
   // 5. Telemetry offline — heartbeat lost (possible breakdown / disconnect / theft)
   if (telemetry && telemetry.connectionStatus === "offline") {
     const secs = telemetry.offlineDurationSeconds;

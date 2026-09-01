@@ -2,7 +2,7 @@ import Icon from "./Icon.jsx";
 
 const TYPES = ["Excavator", "Crane", "Bulldozer", "Grader"];
 
-export default function DemandInsights({ equipment }) {
+export default function DemandInsights({ equipment, telemetry = [], maintenance = [] }) {
   const counts = {};
   const avgDays = {};
   TYPES.forEach((t) => {
@@ -27,6 +27,8 @@ export default function DemandInsights({ equipment }) {
   const fleetUtil = totalEngine + totalIdle > 0
     ? round((totalEngine / (totalEngine + totalIdle)) * 100)
     : 0;
+  const totalFuel = round(telemetry.reduce((s, t) => s + (t.fuelConsumed || 0), 0));
+  const totalDowntime = round(maintenance.reduce((s, m) => s + (m.downtimeHours || 0), 0));
 
   // Usage by site
   const bySite = {};
@@ -43,11 +45,13 @@ export default function DemandInsights({ equipment }) {
   return (
     <div className="space-y-6">
       {/* Fleet usage summary */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <SummaryCard label="Total rented engine hours" value={totalEngine} unit="h" />
         <SummaryCard label="Total idle hours" value={totalIdle} unit="h" tone="amber" />
         <SummaryCard label="Total operating days" value={totalDays} unit="d" />
         <SummaryCard label="Fleet utilisation" value={fleetUtil} unit="%" />
+        <SummaryCard label="Fuel consumed" value={totalFuel} unit="L" />
+        <SummaryCard label="Total downtime" value={totalDowntime} unit="h" tone="amber" />
       </div>
 
       {/* Usage by site */}

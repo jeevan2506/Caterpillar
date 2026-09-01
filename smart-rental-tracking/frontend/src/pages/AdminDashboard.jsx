@@ -217,7 +217,11 @@ export default function AdminDashboard() {
           {!loading && tab === "Maintenance" && <MaintenancePanel />}
 
           {!loading && tab === "Demand Insights" && (
-            <DemandInsights equipment={data.equipment} />
+            <DemandInsights
+              equipment={data.equipment}
+              telemetry={data.telemetry}
+              maintenance={data.maintenance}
+            />
           )}
 
           {!loading && tab === "Operators" && (
