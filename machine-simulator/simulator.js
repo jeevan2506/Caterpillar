@@ -40,8 +40,10 @@ const SERVER_URL = (
 
 const EQUIPMENT_ID = process.env.EQUIPMENT_ID || args.id || "EQ1001";
 const SITE_ID = process.env.SITE_ID || args.site || "S003";
+// 3s heartbeat: well under the 10s offline threshold, so a single dropped
+// request doesn't flip the machine Offline.
 const INTERVAL_MS = parseInt(
-  process.env.INTERVAL_MS || args.interval || "5000",
+  process.env.INTERVAL_MS || args.interval || "3000",
   10
 );
 let MACHINE_STATUS = process.env.MACHINE_STATUS || args.status || "running";

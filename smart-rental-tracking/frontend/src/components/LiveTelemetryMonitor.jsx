@@ -8,16 +8,21 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
   const [now, setNow] = useState(Date.now());
   const [autoPoll] = useState(true);
   const pollIntervalRef = useRef(null);
+  const reqSeqRef = useRef(0);
 
   // Default fallback list of equipment IDs if none passed
   const availableEqIds = equipment.length > 0
     ? equipment.map((e) => e.equipmentId)
     : ["EQ1001", "EQ1002", "EQ1003", "EQ1004", "EQ1005", "EQ1006", "EQ1007"];
 
-  // Fetch telemetry for all machines
+  // Fetch telemetry for all machines. Responses can arrive out of order, so
+  // tag each request and ignore any that isn't the latest — otherwise a slow
+  // response can overwrite fresher data and make the status flicker.
   async function fetchLiveTelemetry() {
+    const seq = ++reqSeqRef.current;
     try {
       const res = await getAllTelemetry();
+      if (seq !== reqSeqRef.current) return; // a newer request already returned
       const newMap = {};
       if (Array.isArray(res.data)) {
         res.data.forEach((item) => {
@@ -40,14 +45,14 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Polling every 3 seconds for real-time telemetry updates
+  // Poll every 2s so the displayed "last heartbeat" stays close to real time
   useEffect(() => {
     fetchLiveTelemetry();
 
     if (autoPoll) {
       pollIntervalRef.current = setInterval(() => {
         fetchLiveTelemetry();
-      }, 3000);
+      }, 2000);
     }
 
     return () => {
