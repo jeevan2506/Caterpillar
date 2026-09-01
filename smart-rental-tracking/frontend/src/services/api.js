@@ -23,6 +23,7 @@ export const getUserBookings = (userId) => api.get(`/bookings/${userId}`);
 export const validateScan = (bookingId) =>
   api.post("/scan/validate", { bookingId });
 export const confirmPickup = (data) => api.post("/scan/confirm-pickup", data);
+export const assignOperator = (data) => api.post("/scan/assign-operator", data);
 export const confirmReturn = (bookingId) =>
   api.post("/scan/confirm-return", { bookingId });
 

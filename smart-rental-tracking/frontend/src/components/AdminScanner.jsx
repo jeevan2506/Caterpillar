@@ -3,7 +3,12 @@ import QRScanner from "./QRScanner.jsx";
 import Badge from "./Badge.jsx";
 import Icon from "./Icon.jsx";
 import { Spinner, Alert } from "./ui.jsx";
-import { validateScan, confirmPickup, confirmReturn } from "../services/api.js";
+import {
+  validateScan,
+  confirmPickup,
+  confirmReturn,
+  getOperators,
+} from "../services/api.js";
 
 export default function AdminScanner({ onChange }) {
   const [bookingId, setBookingId] = useState("");
@@ -13,6 +18,7 @@ export default function AdminScanner({ onChange }) {
   const [loading, setLoading] = useState(false);
   const [siteId, setSiteId] = useState("");
   const [operatorId, setOperatorId] = useState("");
+  const [operatorChoices, setOperatorChoices] = useState([]);
 
   async function runValidate(id) {
     const theId = (id || bookingId).trim();
@@ -20,11 +26,26 @@ export default function AdminScanner({ onChange }) {
     setError("");
     setSuccess("");
     setResult(null);
+    setOperatorChoices([]);
     setLoading(true);
     try {
       const res = await validateScan(theId);
-      if (!res.data.success) setError(res.data.message);
-      else setResult({ ...res.data, bookingId: theId });
+      if (!res.data.success) {
+        setError(res.data.message);
+      } else {
+        setResult({ ...res.data, bookingId: theId });
+        // For a Caterpillar-operator booking at pickup, load the operators the
+        // Admin is allowed to choose: certified for this equipment + available.
+        if (
+          res.data.action === "confirm-pickup" &&
+          res.data.booking.operatorRequest === "caterpillar-assigned" &&
+          res.data.equipment
+        ) {
+          getOperators(res.data.equipment.type)
+            .then((r) => setOperatorChoices(r.data))
+            .catch(() => setOperatorChoices([]));
+        }
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Validation failed.");
     } finally {
@@ -71,6 +92,7 @@ export default function AdminScanner({ onChange }) {
     setBookingId("");
     setSiteId("");
     setOperatorId("");
+    setOperatorChoices([]);
   }
 
   return (
@@ -194,7 +216,7 @@ export default function AdminScanner({ onChange }) {
                         className="input"
                       />
                     </div>
-                    {result.booking.operatorRequest === "self" && (
+                    {result.booking.operatorRequest === "self" ? (
                       <div>
                         <label className="label">Operator ID (customer's own)</label>
                         <input
@@ -203,6 +225,29 @@ export default function AdminScanner({ onChange }) {
                           placeholder="e.g. OP550"
                           className="input"
                         />
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="label">
+                          Assign a Caterpillar operator ({result.equipment?.type})
+                        </label>
+                        <select
+                          value={operatorId}
+                          onChange={(e) => setOperatorId(e.target.value)}
+                          className="input"
+                        >
+                          <option value="">— assign later —</option>
+                          {operatorChoices.map((op) => (
+                            <option key={op.operatorId} value={op.operatorId}>
+                              {op.name} ({op.operatorId})
+                            </option>
+                          ))}
+                        </select>
+                        {operatorChoices.length === 0 && (
+                          <p className="mt-1 text-xs text-amber-600">
+                            No certified operator available — pick one later from Operators.
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>

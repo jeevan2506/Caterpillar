@@ -231,7 +231,12 @@ export default function AdminDashboard() {
           )}
 
           {!loading && tab === "Operators" && (
-            <OperatorTable operators={data.operators} bookings={data.bookings} />
+            <OperatorTable
+              operators={data.operators}
+              bookings={data.bookings}
+              equipment={data.equipment}
+              onChange={load}
+            />
           )}
         </main>
       </div>

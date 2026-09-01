@@ -84,13 +84,37 @@ router.post("/confirm-pickup", async (req, res) => {
     equipment.status = "active";
     if (siteId) equipment.siteId = siteId;
 
-    if (booking.operatorRequest === "caterpillar-assigned" && booking.assignedOperatorId) {
-      equipment.lastOperatorId = booking.assignedOperatorId;
-      equipment.operatorSource = "caterpillar-assigned";
-    } else if (operatorId) {
-      equipment.lastOperatorId = operatorId;
-      equipment.operatorSource = "self";
+    // Operator handling — nothing is auto-assigned. Start clean each rental.
+    equipment.lastOperatorId = null;
+    equipment.operatorSource = null;
+    if (operatorId) {
+      if (booking.operatorRequest === "self") {
+        // Customer's own operator — not tracked in our roster, just record the ID.
+        equipment.lastOperatorId = operatorId;
+        equipment.operatorSource = "self";
+      } else {
+        // Caterpillar operator picked by Admin — must be certified + available.
+        const op = await Operator.findOne({ operatorId });
+        if (!op) {
+          return res.status(400).json({ message: `Operator ${operatorId} not found` });
+        }
+        if (!op.certifiedEquipmentTypes.includes(equipment.type)) {
+          return res.status(400).json({
+            message: `${op.name} is not certified for ${equipment.type}`,
+          });
+        }
+        if (op.availabilityStatus !== "available") {
+          return res.status(400).json({ message: `${op.name} is already assigned` });
+        }
+        op.availabilityStatus = "assigned";
+        await op.save();
+        booking.assignedOperatorId = op.operatorId;
+        equipment.lastOperatorId = op.operatorId;
+        equipment.operatorSource = "caterpillar-assigned";
+      }
     }
+    // If no operatorId was given, the machine goes out without an operator and
+    // the Admin can assign one later via POST /api/scan/assign-operator.
 
     await booking.save();
     await equipment.save();
@@ -138,6 +162,62 @@ router.post("/confirm-return", async (req, res) => {
     res.json({ success: true, message: "Return confirmed", booking, equipment });
   } catch (err) {
     res.status(500).json({ message: "Failed to confirm return", error: err.message });
+  }
+});
+
+// POST /api/scan/assign-operator  { bookingId, operatorId }
+// Admin assigns (or re-assigns) a Caterpillar operator to a booking. Only a
+// certified + available operator can be chosen.
+router.post("/assign-operator", async (req, res) => {
+  try {
+    const { bookingId, operatorId } = req.body;
+    if (!bookingId || !operatorId) {
+      return res.status(400).json({ message: "bookingId and operatorId are required" });
+    }
+
+    const booking = await Booking.findOne({ bookingId });
+    if (!booking) return res.status(404).json({ message: "Invalid booking" });
+    if (!["unused", "checked-out"].includes(booking.qrStatus)) {
+      return res.status(400).json({ message: "Booking is not active" });
+    }
+
+    const equipment = await Equipment.findOne({ equipmentId: booking.equipmentId });
+    if (!equipment) return res.status(404).json({ message: "Equipment not found" });
+
+    const op = await Operator.findOne({ operatorId });
+    if (!op) return res.status(400).json({ message: `Operator ${operatorId} not found` });
+    if (!op.certifiedEquipmentTypes.includes(equipment.type)) {
+      return res
+        .status(400)
+        .json({ message: `${op.name} is not certified for ${equipment.type}` });
+    }
+    if (op.availabilityStatus !== "available") {
+      return res.status(400).json({ message: `${op.name} is already assigned` });
+    }
+
+    // Free the previously assigned operator, if any
+    if (booking.assignedOperatorId && booking.assignedOperatorId !== operatorId) {
+      const prev = await Operator.findOne({ operatorId: booking.assignedOperatorId });
+      if (prev) {
+        prev.availabilityStatus = "available";
+        await prev.save();
+      }
+    }
+
+    op.availabilityStatus = "assigned";
+    await op.save();
+
+    booking.assignedOperatorId = op.operatorId;
+    booking.operatorRequest = "caterpillar-assigned";
+    equipment.lastOperatorId = op.operatorId;
+    equipment.operatorSource = "caterpillar-assigned";
+
+    await booking.save();
+    await equipment.save();
+
+    res.json({ success: true, message: `Assigned ${op.name}`, booking, equipment, operator: op });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to assign operator", error: err.message });
   }
 });
 

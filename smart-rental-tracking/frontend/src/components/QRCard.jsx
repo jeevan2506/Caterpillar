@@ -11,9 +11,11 @@ export default function QRCard({ data }) {
       "Operator",
       operator
         ? `${operator.name} (${operator.operatorId})`
+        : booking.assignedOperatorId
+        ? booking.assignedOperatorId
         : booking.operatorRequest === "self"
         ? "Own operator"
-        : booking.assignedOperatorId || "—",
+        : "Assigned by Admin at pickup",
     ],
     ["Rental duration", booking.rentalDays ? `${booking.rentalDays} days` : "—"],
     [

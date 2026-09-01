@@ -30,24 +30,9 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ message: "Equipment not found" });
     }
 
-    let assignedOperator = null;
-
-    if (operatorRequest === "caterpillar-assigned") {
-      assignedOperator = await Operator.findOne({
-        certifiedEquipmentTypes: equipment.type,
-        availabilityStatus: "available",
-      });
-
-      if (!assignedOperator) {
-        return res.status(400).json({
-          message: `No available Caterpillar operator certified for ${equipment.type}`,
-        });
-      }
-
-      assignedOperator.availabilityStatus = "assigned";
-      await assignedOperator.save();
-    }
-
+    // Operators are NOT auto-assigned at booking. If the customer wants a
+    // Caterpillar operator, the Admin assigns a certified + available one at
+    // (or after) pickup. "self" means the customer brings their own.
     const bookingId = "BOOK-" + Date.now();
 
     const booking = await Booking.create({
@@ -55,7 +40,7 @@ router.post("/", async (req, res) => {
       userId,
       equipmentId,
       operatorRequest,
-      assignedOperatorId: assignedOperator ? assignedOperator.operatorId : null,
+      assignedOperatorId: null,
       rentalDays,
       paymentStatus: "paid", // mock payment
       qrStatus: "unused",
@@ -67,7 +52,7 @@ router.post("/", async (req, res) => {
       booking,
       qrCode,
       equipment,
-      operator: assignedOperator,
+      operator: null,
     });
   } catch (err) {
     res.status(500).json({ message: "Failed to create booking", error: err.message });

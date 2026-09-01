@@ -49,7 +49,7 @@ export default function BookingModal({ equipment, userId, onClose, onBooked }) {
     {
       key: "caterpillar-assigned",
       title: "Request a Caterpillar operator",
-      desc: "We assign a certified operator automatically.",
+      desc: "A certified operator is assigned by the Admin at pickup.",
       icon: "users",
     },
     {
@@ -171,7 +171,7 @@ export default function BookingModal({ equipment, userId, onClose, onBooked }) {
               {operatorRequest === "caterpillar-assigned" && (
                 <div className="mt-4 rounded-xl border border-stone-200 p-3.5">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
-                    Certified operators available for {equipment.type}
+                    Certified operators for {equipment.type} · one assigned at pickup
                   </p>
                   {loadingOps ? (
                     <p className="flex items-center gap-2 text-sm text-stone-400">
