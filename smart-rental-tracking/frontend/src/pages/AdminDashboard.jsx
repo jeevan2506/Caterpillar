@@ -5,6 +5,7 @@ import EquipmentTable from "../components/EquipmentTable.jsx";
 import AnomalyPanel from "../components/AnomalyPanel.jsx";
 import MaintenancePanel from "../components/MaintenancePanel.jsx";
 import DemandInsights from "../components/DemandInsights.jsx";
+import DemandForecast from "../components/DemandForecast.jsx";
 import OperatorTable from "../components/OperatorTable.jsx";
 import ChatWidget from "../components/ChatWidget.jsx";
 import LiveTelemetryMonitor from "../components/LiveTelemetryMonitor.jsx";
@@ -22,6 +23,7 @@ const NAV = [
   { label: "Anomalies", icon: "alert" },
   { label: "Maintenance", icon: "wrench" },
   { label: "Demand Insights", icon: "chart" },
+  { label: "Demand Forecasting", icon: "chart" },
   { label: "Operators", icon: "users" },
 ];
 
@@ -222,6 +224,10 @@ export default function AdminDashboard() {
               telemetry={data.telemetry}
               maintenance={data.maintenance}
             />
+          )}
+
+          {tab === "Demand Forecasting" && (
+            <DemandForecast />
           )}
 
           {!loading && tab === "Operators" && (

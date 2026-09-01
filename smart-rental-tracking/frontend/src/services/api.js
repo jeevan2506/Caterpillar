@@ -45,4 +45,10 @@ export const sendTelemetry = (equipmentId, data) =>
 // ---- Combined snapshot (equipment + maintenance + bookings + operators + telemetry) ----
 export const getContext = () => api.get("/chatbot-context");
 
+// ---- Demand Forecasting ----
+export const getForecast = (site_id, equipment_type) =>
+  api.get("/forecast", { params: { site_id, equipment_type } });
+export const getForecastSummary = () => api.get("/forecast/summary");
+export const getForecastMeta = () => api.get("/forecast/meta");
+
 export default api;

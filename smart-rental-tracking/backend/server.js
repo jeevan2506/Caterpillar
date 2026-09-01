@@ -13,6 +13,7 @@ const userRoutes = require("./routes/users");
 const chatbotRoutes = require("./routes/chatbot");
 const chatRoutes = require("./routes/chat");
 const telemetryRoutes = require("./routes/telemetry");
+const forecastRoutes = require("./routes/forecast");
 
 const app = express();
 app.use(cors());
@@ -31,6 +32,7 @@ app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/telemetry", telemetryRoutes);
+app.use("/api/forecast", forecastRoutes);
 app.use("/api", chatbotRoutes);
 
 // Fallback error handler so the server never crashes on an unexpected error
