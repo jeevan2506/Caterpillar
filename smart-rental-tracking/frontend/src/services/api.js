@@ -19,6 +19,10 @@ export const getOperators = (type) =>
 export const createBooking = (data) => api.post("/bookings", data);
 export const getUserBookings = (userId) => api.get(`/bookings/${userId}`);
 
+// ---- Razorpay ----
+export const createRazorpayOrder = (data) => api.post("/create-order", data);
+export const verifyRazorpayPayment = (data) => api.post("/verify-payment", data);
+
 // ---- Scan ----
 export const validateScan = (bookingId) =>
   api.post("/scan/validate", { bookingId });

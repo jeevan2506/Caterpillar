@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { getOperators, createBooking } from "../services/api.js";
+import {
+  getOperators,
+  createBooking,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+} from "../services/api.js";
 import Badge from "./Badge.jsx";
 import QRCard from "./QRCard.jsx";
 import Icon from "./Icon.jsx";
@@ -16,6 +21,20 @@ export default function BookingModal({ equipment, userId, onClose, onBooked }) {
 
   const days = Math.max(1, Math.min(90, Number(rentalDays) || 1));
   const estReturn = new Date(Date.now() + days * 86400000).toLocaleDateString();
+  const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+
+  useEffect(() => {
+    const scriptId = "razorpay-checkout-script";
+    const existingScript = document.getElementById(scriptId);
+
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
 
   useEffect(() => {
     if (operatorRequest !== "caterpillar-assigned") return;
@@ -29,17 +48,88 @@ export default function BookingModal({ equipment, userId, onClose, onBooked }) {
   async function payNow() {
     setError("");
     setPaying(true);
+
     try {
-      const res = await createBooking({
-        userId,
-        equipmentId: equipment.equipmentId,
-        operatorRequest,
-        rentalDays: days,
+      if (!razorpayKey) {
+        throw new Error("Razorpay key is missing. Add VITE_RAZORPAY_KEY_ID to the frontend .env file.");
+      }
+
+      const amountPaise = Math.max(100, Math.round((equipment.dailyRate || 3500) * days));
+
+      const orderRes = await createRazorpayOrder({
+        amount: amountPaise,
+        currency: "INR",
+        receipt: `booking_${Date.now()}`,
       });
-      setConfirmation(res.data);
-      onBooked && onBooked();
+
+      const { order_id } = orderRes.data;
+
+      const options = {
+        key: razorpayKey,
+        amount: amountPaise,
+        currency: "INR",
+        name: "Smart Rental Tracking",
+        description: `${equipment.equipmentId} rental (${days} days)`,
+        order_id,
+        handler: async function (response) {
+          try {
+            const verification = await verifyRazorpayPayment({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (!verification.data?.success) {
+              throw new Error("Payment verification failed.");
+            }
+
+            const res = await createBooking({
+              userId,
+              equipmentId: equipment.equipmentId,
+              operatorRequest,
+              rentalDays: days,
+              paymentStatus: "paid",
+            });
+
+            setConfirmation(res.data);
+            onBooked && onBooked();
+          } catch (verifyErr) {
+            setError(
+              verifyErr.response?.data?.message ||
+                verifyErr.message ||
+                "Payment verification failed. Please contact support."
+            );
+          }
+        },
+        prefill: {
+          name: "Customer",
+          email: "customer@example.com",
+          contact: "9999999999",
+        },
+        theme: {
+          color: "#0B0B0C",
+        },
+        modal: {
+          ondismiss: function () {
+            setError("Payment cancelled. No charge was made.");
+          },
+        },
+        notify: {
+          sms: true,
+          email: true,
+        },
+      };
+
+      const razorpayCheckout = new window.Razorpay(options);
+      razorpayCheckout.on("payment.failed", function (response) {
+        setError(
+          response.error?.description ||
+            "Payment failed. Please try again or use a different payment method."
+        );
+      });
+      razorpayCheckout.open();
     } catch (err) {
-      setError(err.response?.data?.message || "Booking failed. Please try again.");
+      setError(err.response?.data?.message || err.message || "Booking failed. Please try again.");
     } finally {
       setPaying(false);
     }
@@ -231,7 +321,7 @@ export default function BookingModal({ equipment, userId, onClose, onBooked }) {
                   <Spinner className="h-4 w-4" /> Processing payment…
                 </>
               ) : (
-                "Pay now · mock payment"
+                "Pay now · secure checkout"
               )}
             </button>
           ) : (

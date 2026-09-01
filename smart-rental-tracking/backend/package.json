@@ -17,6 +17,7 @@
     "express": "^4.19.2",
     "mongoose": "^8.5.1",
     "qrcode": "^1.5.4",
+    "razorpay": "^2.9.8",
     "twilio": "^6.1.0"
   },
   "devDependencies": {
