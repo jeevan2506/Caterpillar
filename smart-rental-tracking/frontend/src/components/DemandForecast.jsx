@@ -11,66 +11,50 @@ import {
   Cell,
 } from "recharts";
 import { getForecast, getForecastSummary, getForecastMeta } from "../services/api.js";
+import Icon from "./Icon.jsx";
+import Badge from "./Badge.jsx";
+import { Loading, Alert } from "./ui.jsx";
 
-// ─── Caterpillar design tokens ────────────────────────────────────────────────
 const CAT_YELLOW = "#FFCD11";
-const CAT_INK    = "#1C1917";
-const SITE_COLORS = [
-  "#6366f1", // indigo
-  "#f59e0b", // amber
-  "#10b981", // emerald
-  "#ef4444", // red
-  "#8b5cf6", // violet
-  "#0ea5e9", // sky
-];
+const SERIES = ["#0f766e", "#7c3aed", "#2563eb", "#db2777", "#ea580c", "#0891b2"];
 
 const MONTH_NAMES = {
-  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
-  "05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
-  "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
+  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr", "05": "May", "06": "Jun",
+  "07": "Jul", "08": "Aug", "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
 };
-
 function fmtMonth(m) {
   const [y, mo] = m.split("-");
   return `${MONTH_NAMES[mo]} ${y}`;
 }
 
-// ─── Custom Tooltip ───────────────────────────────────────────────────────────
-function CustomTooltip({ active, payload, label }) {
+function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{
-      background: "#fff",
-      border: "1px solid #e7e5e4",
-      borderRadius: 12,
-      padding: "10px 16px",
-      boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
-      fontSize: 13,
-    }}>
-      <p style={{ fontWeight: 700, color: CAT_INK, marginBottom: 6 }}>{label}</p>
-      {payload.map((p) => (
-        <p key={p.dataKey} style={{ color: p.fill || p.color, margin: "2px 0" }}>
-          <b>{p.name}</b>: {p.value} units
-        </p>
-      ))}
+    <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs shadow-lift">
+      <p className="mb-1 font-bold text-stone-900">{label}</p>
+      {payload
+        .filter((p) => p.value > 0)
+        .map((p) => (
+          <p key={p.dataKey} className="tabular-nums" style={{ color: p.color }}>
+            {p.name}: <strong>{p.value}</strong> units
+          </p>
+        ))}
     </div>
   );
 }
 
 export default function DemandForecast() {
-  const [meta, setMeta]           = useState({ site_ids: [], equipment_types: [] });
-  const [summary, setSummary]     = useState([]);
-  const [insight, setInsight]     = useState("");
-  const [selectedSite, setSelectedSite]   = useState("");
+  const [meta, setMeta] = useState({ site_ids: [], equipment_types: [] });
+  const [summary, setSummary] = useState([]);
+  const [insight, setInsight] = useState("");
+  const [selectedSite, setSelectedSite] = useState("");
   const [selectedEquip, setSelectedEquip] = useState("");
-  const [chartData1, setChartData1] = useState([]); // by equipment, per month (selected site)
-  const [chartData2, setChartData2] = useState([]); // by site, per month (selected equip)
-  const [tableRows, setTableRows]   = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [loading2, setLoading2]     = useState(false);
-  const [error, setError]           = useState("");
+  const [chartData1, setChartData1] = useState([]);
+  const [chartData2, setChartData2] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loading2, setLoading2] = useState(false);
+  const [error, setError] = useState("");
 
-  // ── Step 1: Load meta + summary ────────────────────────────────────────────
   useEffect(() => {
     async function init() {
       setLoading(true);
@@ -81,15 +65,15 @@ export default function DemandForecast() {
           getForecastSummary(),
         ]);
         const m = metaRes.data;
-        const s = sumRes.data;
         setMeta(m);
-        setSummary(s.summary || []);
-        setInsight(s.insight || "");
-        // Set default selections
-        if (m.site_ids.length)       setSelectedSite(m.site_ids[0]);
+        setSummary(sumRes.data.summary || []);
+        setInsight(sumRes.data.insight || "");
+        if (m.site_ids.length) setSelectedSite(m.site_ids[0]);
         if (m.equipment_types.length) setSelectedEquip(m.equipment_types[0]);
-      } catch (e) {
-        setError("Could not load forecast data. Make sure the backend is running and demand_history is seeded.");
+      } catch {
+        setError(
+          "Could not load forecast data. Make sure the backend is running and demand_history is seeded (npm run seed:demand)."
+        );
       } finally {
         setLoading(false);
       }
@@ -97,146 +81,94 @@ export default function DemandForecast() {
     init();
   }, []);
 
-  // ── Step 2: Fetch chart data whenever filters change ───────────────────────
   const fetchCharts = useCallback(async () => {
     if (!selectedSite || !selectedEquip || !meta.site_ids.length) return;
     setLoading2(true);
     try {
-      // Chart 1: all equipment types for selected site → per month bars
-      const equipPromises = meta.equipment_types.map((eq) =>
-        getForecast(selectedSite, eq)
-      );
-      // Chart 2: all sites for selected equipment type → per month bars
-      const sitePromises = meta.site_ids.map((s) =>
-        getForecast(s, selectedEquip)
-      );
-
       const [equipResults, siteResults] = await Promise.all([
-        Promise.all(equipPromises),
-        Promise.all(sitePromises),
+        Promise.all(meta.equipment_types.map((eq) => getForecast(selectedSite, eq))),
+        Promise.all(meta.site_ids.map((s) => getForecast(s, selectedEquip))),
       ]);
 
-      // Build Chart 1 data: x = month, bars = equipment types
       const months1 = equipResults[0]?.data?.forecast?.map((f) => f.month) || [];
-      const chart1 = months1.map((m) => {
-        const row = { month: fmtMonth(m) };
-        equipResults.forEach((r, i) => {
-          const eq = meta.equipment_types[i];
-          const fcast = r.data?.forecast?.find((f) => f.month === m);
-          row[eq] = fcast?.predicted_units ?? 0;
-        });
-        return row;
-      });
-      setChartData1(chart1);
+      setChartData1(
+        months1.map((m) => {
+          const row = { month: fmtMonth(m) };
+          equipResults.forEach((r, i) => {
+            const f = r.data?.forecast?.find((x) => x.month === m);
+            row[meta.equipment_types[i]] = f?.predicted_units ?? 0;
+          });
+          return row;
+        })
+      );
 
-      // Build Chart 2 data: x = month, bars = sites
       const months2 = siteResults[0]?.data?.forecast?.map((f) => f.month) || [];
-      const chart2 = months2.map((m) => {
-        const row = { month: fmtMonth(m) };
-        siteResults.forEach((r, i) => {
-          const s = meta.site_ids[i];
-          const fcast = r.data?.forecast?.find((f) => f.month === m);
-          row[s] = fcast?.predicted_units ?? 0;
-        });
-        return row;
-      });
-      setChartData2(chart2);
-
-      // Build table from summary, filtered by selected site and equip
-      const rows = summary.map((s) => ({
-        equipment_type: s.equipment_type,
-        site_id: s.site_id,
-        peak_month: fmtMonth(s.peak_month),
-        predicted_units: s.predicted_units,
-        units_available: s.units_available,
-        shortage: s.shortage,
-        surplus: s.surplus,
-      }));
-      setTableRows(rows);
+      setChartData2(
+        months2.map((m) => {
+          const row = { month: fmtMonth(m) };
+          siteResults.forEach((r, i) => {
+            const f = r.data?.forecast?.find((x) => x.month === m);
+            row[meta.site_ids[i]] = f?.predicted_units ?? 0;
+          });
+          return row;
+        })
+      );
     } catch (e) {
       console.error(e);
     } finally {
       setLoading2(false);
     }
-  }, [selectedSite, selectedEquip, meta, summary]);
+  }, [selectedSite, selectedEquip, meta]);
 
   useEffect(() => {
     fetchCharts();
   }, [fetchCharts]);
 
-  // ── Peak bar index helpers ─────────────────────────────────────────────────
-  function getMaxKey(row, keys) {
-    return keys.reduce((best, k) => (row[k] > (row[best] ?? -1) ? k : best), keys[0]);
-  }
+  if (loading) return <Loading label="Loading forecast…" />;
+  if (error) return <Alert>{error}</Alert>;
 
-  if (loading) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 40, color: "#78716c" }}>
-        <span style={{ fontSize: 24 }}>⏳</span>
-        <span style={{ fontWeight: 600 }}>Loading forecast data…</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{
-        background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 16,
-        padding: "16px 20px", color: "#dc2626", fontWeight: 600
-      }}>
-        ⚠️ {error}
-      </div>
-    );
-  }
+  const shortages = summary.filter((s) => s.shortage > 0).length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-
-      {/* ── Insight Banner ─────────────────────────────────────────────────── */}
+    <div className="space-y-6">
+      {/* Insight banner */}
       {insight && (
-        <div style={{
-          background: "linear-gradient(135deg, #1c1917 0%, #292524 100%)",
-          borderRadius: 20,
-          padding: "20px 28px",
-          display: "flex",
-          alignItems: "center",
-          gap: 18,
-          boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
-        }}>
-          <div style={{
-            width: 48, height: 48, borderRadius: 14,
-            background: CAT_YELLOW,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 22, flexShrink: 0,
-          }}>📊</div>
+        <div className="flex items-center gap-4 rounded-2xl bg-cat-ink px-6 py-5 text-white">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-cat-yellow text-cat-ink">
+            <Icon name="spark" className="h-5 w-5" />
+          </span>
           <div>
-            <p style={{ color: "#a8a29e", fontSize: 11, fontWeight: 700,
-              textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-              Top Demand Insight
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-cat-yellow">
+              Top demand insight
             </p>
-            <p style={{ color: "#fff", fontWeight: 700, fontSize: 16, margin: 0,
-              lineHeight: 1.5 }}>
+            <p className="mt-0.5 font-display text-base font-bold leading-snug">
               {insight}
             </p>
           </div>
         </div>
       )}
 
-      {/* ── Filters ────────────────────────────────────────────────────────── */}
-      <div style={{
-        background: "#fff",
-        borderRadius: 20, border: "1px solid #e7e5e4",
-        padding: "16px 24px",
-        display: "flex", flexWrap: "wrap", gap: 20, alignItems: "flex-end",
-      }}>
+      {/* Summary stat row */}
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+        <MiniStat label="Site + type combos" value={summary.length} />
+        <MiniStat label="Forecast horizon" value="6 mo" />
+        <MiniStat label="Combos in shortage" value={shortages} tone="red" />
+        <MiniStat
+          label="Model"
+          value="Seasonal + WLR"
+          hint="Seasonal decomposition + weighted linear regression"
+        />
+      </div>
+
+      {/* Filters */}
+      <div className="card flex flex-wrap items-end gap-4 p-4">
         <div>
-          <label className="label">Site ID</label>
+          <label className="label">Site</label>
           <select
             id="forecast-site-filter"
             value={selectedSite}
             onChange={(e) => setSelectedSite(e.target.value)}
-            className="input"
-            style={{ minWidth: 160 }}
+            className="input min-w-[140px]"
           >
             {meta.site_ids.map((s) => (
               <option key={s} value={s}>{s}</option>
@@ -244,13 +176,12 @@ export default function DemandForecast() {
           </select>
         </div>
         <div>
-          <label className="label">Equipment Type</label>
+          <label className="label">Equipment type</label>
           <select
             id="forecast-equip-filter"
             value={selectedEquip}
             onChange={(e) => setSelectedEquip(e.target.value)}
-            className="input"
-            style={{ minWidth: 200 }}
+            className="input min-w-[160px]"
           >
             {meta.equipment_types.map((e) => (
               <option key={e} value={e}>{e}</option>
@@ -258,182 +189,83 @@ export default function DemandForecast() {
           </select>
         </div>
         {loading2 && (
-          <div style={{ color: "#a8a29e", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⟳</span>
-            Updating charts…
-          </div>
+          <span className="pb-2.5 text-xs text-stone-400">Updating charts…</span>
         )}
       </div>
 
-      {/* ── Chart 1: Equipment Types for Selected Site ─────────────────────── */}
-      <div className="card" style={{ padding: "24px 28px" }}>
-        <div style={{ marginBottom: 20 }}>
-          <h3 style={{ fontWeight: 800, fontSize: 16, color: CAT_INK, margin: 0 }}>
-            📦 Predicted Demand by Equipment Type
-          </h3>
-          <p style={{ color: "#78716c", fontSize: 13, marginTop: 4, marginBottom: 0 }}>
-            Site <strong>{selectedSite}</strong> — next 6 months forecast
-          </p>
-        </div>
-        {chartData1.length > 0 ? (
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={chartData1} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f4" />
-              <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#78716c" }} />
-              <YAxis tick={{ fontSize: 12, fill: "#78716c" }} unit=" u" />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              {meta.equipment_types.map((eq, i) => {
-                const maxRow = chartData1.reduce((best, row) =>
-                  (row[eq] > (best?.[eq] ?? -1) ? row : best), null
-                );
-                const colors = ["#6366f1","#f59e0b","#10b981","#ef4444","#8b5cf6","#0ea5e9"];
-                return (
-                  <Bar key={eq} dataKey={eq} name={eq} radius={[4, 4, 0, 0]}>
-                    {chartData1.map((row) => (
-                      <Cell
-                        key={row.month}
-                        fill={row === maxRow ? CAT_YELLOW : colors[i % colors.length]}
-                        opacity={0.9}
-                      />
-                    ))}
-                  </Bar>
-                );
-              })}
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <p style={{ color: "#a8a29e", textAlign: "center", padding: 40 }}>No data available</p>
-        )}
-      </div>
+      {/* Chart 1 — by equipment type at the selected site */}
+      <ForecastChart
+        icon="cube"
+        title="Predicted demand by equipment type"
+        subtitle={<>Site <strong>{selectedSite}</strong> · next 6 months</>}
+        data={chartData1}
+        keys={meta.equipment_types}
+      />
 
-      {/* ── Chart 2: All Sites for Selected Equipment ──────────────────────── */}
-      <div className="card" style={{ padding: "24px 28px" }}>
-        <div style={{ marginBottom: 20 }}>
-          <h3 style={{ fontWeight: 800, fontSize: 16, color: CAT_INK, margin: 0 }}>
-            🏗️ Predicted Demand Across All Sites
-          </h3>
-          <p style={{ color: "#78716c", fontSize: 13, marginTop: 4, marginBottom: 0 }}>
-            Equipment: <strong>{selectedEquip}</strong> — next 6 months forecast
-          </p>
-        </div>
-        {chartData2.length > 0 ? (
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={chartData2} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f4" />
-              <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#78716c" }} />
-              <YAxis tick={{ fontSize: 12, fill: "#78716c" }} unit=" u" />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              {meta.site_ids.map((site, i) => {
-                const maxRow = chartData2.reduce((best, row) =>
-                  (row[site] > (best?.[site] ?? -1) ? row : best), null
-                );
-                return (
-                  <Bar key={site} dataKey={site} name={site} radius={[4, 4, 0, 0]}>
-                    {chartData2.map((row) => (
-                      <Cell
-                        key={row.month}
-                        fill={row === maxRow ? CAT_YELLOW : SITE_COLORS[i % SITE_COLORS.length]}
-                        opacity={0.9}
-                      />
-                    ))}
-                  </Bar>
-                );
-              })}
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <p style={{ color: "#a8a29e", textAlign: "center", padding: 40 }}>No data available</p>
-        )}
-      </div>
+      {/* Chart 2 — by site for the selected equipment type */}
+      <ForecastChart
+        icon="activity"
+        title="Predicted demand across all sites"
+        subtitle={<>Equipment <strong>{selectedEquip}</strong> · next 6 months</>}
+        data={chartData2}
+        keys={meta.site_ids}
+      />
 
-      {/* ── Forecast Table ─────────────────────────────────────────────────── */}
-      <div className="card" style={{ overflow: "hidden" }}>
-        <div style={{ padding: "20px 24px 0" }}>
-          <h3 style={{ fontWeight: 800, fontSize: 16, color: CAT_INK, margin: 0 }}>
-            📋 Full Forecast Summary
-          </h3>
-          <p style={{ color: "#78716c", fontSize: 13, marginTop: 4, marginBottom: 16 }}>
-            All site + equipment combinations sorted by peak demand
+      {/* Full summary table */}
+      <div className="card overflow-hidden">
+        <div className="border-b border-stone-100 px-5 py-3.5">
+          <h3 className="section-title">Full forecast summary</h3>
+          <p className="text-xs text-stone-400">
+            Every site + equipment combination, sorted by peak predicted demand
           </p>
         </div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] border-collapse">
             <thead>
-              <tr>
-                {["Equipment Type","Site","Peak Month","Predicted Units","Available","Status"].map((h) => (
-                  <th key={h} className="th">{h}</th>
-                ))}
+              <tr className="border-b border-stone-200">
+                <th className="th">Equipment</th>
+                <th className="th">Site</th>
+                <th className="th">Peak month</th>
+                <th className="th text-right">Predicted</th>
+                <th className="th text-right">Available</th>
+                <th className="th">Status</th>
               </tr>
             </thead>
-            <tbody>
-              {tableRows.map((row, i) => {
-                const isShortage = row.shortage > 0;
-                const isSurplus  = row.surplus > 0;
-                return (
-                  <tr key={i} style={{ borderTop: "1px solid #f5f5f4" }}>
-                    <td className="td">
-                      <span style={{ fontWeight: 700, color: CAT_INK }}>
-                        {row.equipment_type}
-                      </span>
-                    </td>
-                    <td className="td">
-                      <span style={{
-                        background: "#f5f5f4", borderRadius: 8, padding: "2px 10px",
-                        fontSize: 12, fontWeight: 700, color: CAT_INK,
-                      }}>
-                        {row.site_id}
-                      </span>
-                    </td>
-                    <td className="td" style={{ fontWeight: 600, color: "#6366f1" }}>
-                      {row.peak_month}
-                    </td>
-                    <td className="td">
-                      <span style={{
-                        background: CAT_YELLOW + "33", color: CAT_INK,
-                        borderRadius: 8, padding: "2px 10px", fontWeight: 700, fontSize: 13,
-                      }}>
-                        {row.predicted_units}
-                      </span>
-                    </td>
-                    <td className="td" style={{ color: "#78716c" }}>
-                      {row.units_available}
-                    </td>
-                    <td className="td">
-                      {isShortage ? (
-                        <span style={{
-                          background: "#fef2f2", color: "#dc2626",
-                          borderRadius: 8, padding: "3px 10px",
-                          fontSize: 12, fontWeight: 700,
-                        }}>
-                          ⚠️ -{row.shortage} shortage
-                        </span>
-                      ) : isSurplus ? (
-                        <span style={{
-                          background: "#f0fdf4", color: "#16a34a",
-                          borderRadius: 8, padding: "3px 10px",
-                          fontSize: 12, fontWeight: 700,
-                        }}>
-                          ✅ +{row.surplus} surplus
-                        </span>
-                      ) : (
-                        <span style={{
-                          background: "#f5f5f4", color: "#78716c",
-                          borderRadius: 8, padding: "3px 10px",
-                          fontSize: 12, fontWeight: 700,
-                        }}>
-                          — balanced
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {tableRows.length === 0 && (
+            <tbody className="divide-y divide-stone-100">
+              {summary.map((row, i) => (
+                <tr key={i} className="transition hover:bg-stone-50/70">
+                  <td className="td font-display font-bold text-stone-900">
+                    {row.equipment_type}
+                  </td>
+                  <td className="td">
+                    <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-700">
+                      {row.site_id}
+                    </span>
+                  </td>
+                  <td className="td whitespace-nowrap">{fmtMonth(row.peak_month)}</td>
+                  <td className="td text-right">
+                    <span className="rounded-md bg-cat-yellow/20 px-2 py-0.5 font-bold tabular-nums text-cat-ink">
+                      {row.predicted_units}
+                    </span>
+                  </td>
+                  <td className="td text-right tabular-nums text-stone-500">
+                    {row.units_available}
+                  </td>
+                  <td className="td">
+                    {row.shortage > 0 ? (
+                      <Badge status="overdue" label={`−${row.shortage} shortage`} />
+                    ) : row.surplus > 0 ? (
+                      <Badge status="available" label={`+${row.surplus} surplus`} />
+                    ) : (
+                      <Badge status="unused" label="balanced" />
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {summary.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="td" style={{ textAlign: "center", color: "#a8a29e" }}>
-                    No data
+                  <td colSpan={6} className="td py-10 text-center text-stone-400">
+                    No forecast data.
                   </td>
                 </tr>
               )}
@@ -441,6 +273,88 @@ export default function DemandForecast() {
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, tone, hint }) {
+  return (
+    <div className="card p-4" title={hint || undefined}>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+        {label}
+      </p>
+      <p
+        className={`mt-1 font-display text-xl font-extrabold tracking-tight ${
+          tone === "red" && value > 0 ? "text-red-600" : "text-stone-900"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function ForecastChart({ icon, title, subtitle, data, keys }) {
+  // highlight the peak bar per series in CAT yellow
+  const peakByKey = {};
+  keys.forEach((k) => {
+    let best = null;
+    data.forEach((row) => {
+      if (best === null || row[k] > data[best][k]) best = data.indexOf(row);
+    });
+    peakByKey[k] = best;
+  });
+
+  return (
+    <div className="card p-5">
+      <div className="mb-4 flex items-center gap-2">
+        <Icon name={icon} className="h-4 w-4 text-stone-400" />
+        <div>
+          <h3 className="section-title">{title}</h3>
+          <p className="text-xs text-stone-400">{subtitle}</p>
+        </div>
+      </div>
+      {data.length ? (
+        <div className="overflow-x-auto">
+          <ResponsiveContainer width="100%" height={300} minWidth={480}>
+            <BarChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0efec" vertical={false} />
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 11, fill: "#78716c" }}
+                axisLine={{ stroke: "#e7e5e4" }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "#78716c" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: "#f5f5f433" }} />
+              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+              {keys.map((k, i) => (
+                <Bar
+                  key={k}
+                  dataKey={k}
+                  name={k}
+                  fill={SERIES[i % SERIES.length]}
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={26}
+                >
+                  {data.map((row, idx) => (
+                    <Cell
+                      key={idx}
+                      fill={idx === peakByKey[k] ? CAT_YELLOW : SERIES[i % SERIES.length]}
+                    />
+                  ))}
+                </Bar>
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <p className="py-10 text-center text-sm text-stone-400">No data available.</p>
+      )}
     </div>
   );
 }

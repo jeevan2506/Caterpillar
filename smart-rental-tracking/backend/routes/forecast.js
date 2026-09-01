@@ -203,49 +203,54 @@ router.get("/meta", async (req, res) => {
   }
 });
 
+// ── Build the full site+equipment forecast summary (reused by the chatbot) ────
+async function buildSummary() {
+  const combos = await DemandHistory.aggregate([
+    { $group: { _id: { site_id: "$site_id", equipment_type: "$equipment_type" } } },
+    { $sort: { "_id.site_id": 1, "_id.equipment_type": 1 } },
+  ]);
+
+  const results = [];
+
+  for (const combo of combos) {
+    const { site_id, equipment_type } = combo._id;
+    const records = await DemandHistory.find({ site_id, equipment_type }).lean();
+    const { forecast, mae } = computeForecast(records);
+    if (!forecast.length) continue;
+
+    const latestRec = [...records].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    const available = latestRec ? latestRec.units_available : 0;
+
+    const peak = forecast.reduce((best, f) =>
+      f.predicted_units > best.predicted_units ? f : best
+    );
+
+    results.push({
+      site_id,
+      equipment_type,
+      peak_month:      peak.month,
+      predicted_units: peak.predicted_units,
+      units_available: available,
+      shortage:        Math.max(0, peak.predicted_units - available),
+      surplus:         Math.max(0, available - peak.predicted_units),
+      mae:             mae ?? null,
+      all_forecast:    forecast,
+    });
+  }
+
+  results.sort((a, b) => b.predicted_units - a.predicted_units);
+
+  const insight = results.length > 0
+    ? `${results[0].equipment_type}s will be in highest demand at Site ${results[0].site_id} in ${formatMonthLabel(results[0].peak_month)} (predicted ${results[0].predicted_units} units).`
+    : "";
+
+  return { insight, summary: results };
+}
+
 // ── GET /api/forecast/summary ─────────────────────────────────────────────────
 router.get("/summary", async (req, res) => {
   try {
-    const combos = await DemandHistory.aggregate([
-      { $group: { _id: { site_id: "$site_id", equipment_type: "$equipment_type" } } },
-      { $sort: { "_id.site_id": 1, "_id.equipment_type": 1 } },
-    ]);
-
-    const results = [];
-
-    for (const combo of combos) {
-      const { site_id, equipment_type } = combo._id;
-      const records = await DemandHistory.find({ site_id, equipment_type }).lean();
-      const { forecast, mae } = computeForecast(records);
-      if (!forecast.length) continue;
-
-      const latestRec = [...records].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-      const available = latestRec ? latestRec.units_available : 0;
-
-      const peak = forecast.reduce((best, f) =>
-        f.predicted_units > best.predicted_units ? f : best
-      );
-
-      results.push({
-        site_id,
-        equipment_type,
-        peak_month:      peak.month,
-        predicted_units: peak.predicted_units,
-        units_available: available,
-        shortage:        Math.max(0, peak.predicted_units - available),
-        surplus:         Math.max(0, available - peak.predicted_units),
-        mae:             mae ?? null,
-        all_forecast:    forecast,
-      });
-    }
-
-    results.sort((a, b) => b.predicted_units - a.predicted_units);
-
-    const insight = results.length > 0
-      ? `${results[0].equipment_type}s will be in highest demand at Site ${results[0].site_id} in ${formatMonthLabel(results[0].peak_month)} (predicted ${results[0].predicted_units} units).`
-      : "";
-
-    res.json({ insight, summary: results });
+    res.json(await buildSummary());
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error computing summary", error: err.message });
@@ -273,3 +278,4 @@ router.get("/", async (req, res) => {
 });
 
 module.exports = router;
+module.exports.buildSummary = buildSummary;

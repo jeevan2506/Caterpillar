@@ -6,6 +6,7 @@ const Maintenance = require("../models/Maintenance");
 const Booking = require("../models/Booking");
 const Operator = require("../models/Operator");
 const EquipmentTelemetry = require("../models/EquipmentTelemetry");
+const { buildSummary: buildForecastSummary } = require("./forecast");
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
@@ -144,6 +145,27 @@ router.post("/", async (req, res) => {
       }))
     );
 
+    // 6-month demand forecast (peak month + shortage/surplus per site+type)
+    let demandForecast = null;
+    try {
+      const { insight, summary } = await buildForecastSummary();
+      demandForecast = {
+        headline: insight,
+        // keep it compact for the prompt
+        rows: summary.slice(0, 12).map((s) => ({
+          site: s.site_id,
+          equipment: s.equipment_type,
+          peakMonth: s.peak_month,
+          predicted: s.predicted_units,
+          available: s.units_available,
+          shortage: s.shortage,
+          surplus: s.surplus,
+        })),
+      };
+    } catch (e) {
+      console.warn("forecast summary unavailable for chat:", e.message);
+    }
+
     const context = JSON.stringify({
       equipment,
       maintenance,
@@ -151,6 +173,7 @@ router.post("/", async (req, res) => {
       operators,
       telemetry,
       anomalies,
+      demandForecast,
     });
 
     const groqRes = await fetch(GROQ_URL, {
@@ -169,7 +192,10 @@ router.post("/", async (req, res) => {
             content:
               "You are the assistant for a Caterpillar equipment rental dashboard. " +
               "Answer ONLY from the JSON context provided. Cite equipment IDs, sites " +
-              "and operator IDs. If the context does not contain the answer, say so.\n\n" +
+              "and operator IDs. If the context does not contain the answer, say so.\n" +
+              "For demand / shortage / 'what will be needed' questions, use " +
+              "context.demandForecast (peak month, predicted vs available units, " +
+              "shortage/surplus per site + equipment type).\n\n" +
               "This reply is shown in a narrow chat window. Reply in short plain " +
               "sentences. When listing items, use simple dash bullets like:\n" +
               "- EQ1001 (site S003): idle ratio 87%\n" +
