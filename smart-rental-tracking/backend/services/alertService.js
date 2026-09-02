@@ -43,13 +43,24 @@ function formatDuration(diffMs) {
  * Checks all active bookings and dispatches Due-Soon or Overdue SMS alerts.
  * Ensures duplicate prevention by tracking sent flags directly on the booking document.
  */
+// Send a reminder again only if we haven't sent one within the repeat window.
+function dueForReminder(lastSentAt, now, gapMs) {
+  if (!lastSentAt) return true;
+  return now.getTime() - new Date(lastSentAt).getTime() >= gapMs;
+}
+
 async function checkRentalAlerts() {
   try {
     const now = new Date();
 
-    // Due soon threshold in minutes (default 60 min / 1 hour)
-    const dueSoonMinutes = parseInt(process.env.DUE_SOON_THRESHOLD_MINUTES || "60", 10);
+    // Start reminding this many minutes before the expected return (default 2 days)
+    const dueSoonMinutes = parseInt(process.env.DUE_SOON_THRESHOLD_MINUTES || "2880", 10);
     const dueSoonThresholdMs = dueSoonMinutes * 60 * 1000;
+
+    // Re-send the reminder at most once per this many hours, and keep re-sending
+    // every day right up to the last day of the booking, then daily while overdue.
+    const reminderGapMs =
+      parseInt(process.env.REMINDER_INTERVAL_HOURS || "24", 10) * 60 * 60 * 1000;
 
     // Find all checked-out (active) bookings that have an expected return date
     const activeBookings = await Booking.find({
@@ -73,9 +84,9 @@ async function checkRentalAlerts() {
       const userPhone = user ? user.phone : null;
 
       // 1. OVERDUE CONDITION:
-      // Current time is past expected return date AND overdue notification hasn't been sent yet
+      // Past the expected return date — keep reminding once per day until returned.
       if (now > expectedReturn) {
-        if (!booking.overdueSmsSent) {
+        if (dueForReminder(booking.overdueSmsSentAt, now, reminderGapMs)) {
           const overdueDiffMs = now.getTime() - expectedReturn.getTime();
           const durationStr = formatDuration(overdueDiffMs);
 
@@ -116,10 +127,10 @@ async function checkRentalAlerts() {
       }
 
       // 2. DUE-SOON CONDITION:
-      // Expected return date is in future, within threshold, and due-soon notification hasn't been sent yet
+      // Within the reminder window before the return date — remind once per day.
       const timeUntilReturnMs = expectedReturn.getTime() - now.getTime();
       if (timeUntilReturnMs > 0 && timeUntilReturnMs <= dueSoonThresholdMs) {
-        if (!booking.dueSoonSmsSent) {
+        if (dueForReminder(booking.dueSoonSmsSentAt, now, reminderGapMs)) {
           const durationStr = formatDuration(timeUntilReturnMs);
 
           const message = `Smart Rental Tracking: Reminder \u2014 your rental of ${booking.equipmentId} (${equipmentType}) is due in ${durationStr}. Please return the equipment on time. Thank you.`;

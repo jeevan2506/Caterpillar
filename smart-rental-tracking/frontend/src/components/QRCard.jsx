@@ -5,6 +5,14 @@ import { fmtDate } from "../utils/helpers.js";
 import { getDynamicQr } from "../services/api.js";
 import { Spinner } from "./ui.jsx";
 
+// How many whole days remain until the expected return (negative = overdue).
+function daysLeft(booking) {
+  const due = booking.expectedReturnDate;
+  if (!due) return null;
+  const ms = new Date(due).setHours(23, 59, 59, 999) - Date.now();
+  return Math.ceil(ms / 86400000);
+}
+
 // Booking confirmation + Dynamic QR card.
 export default function QRCard({ data, onRefresh }) {
   const { booking, equipment, operator, qrCode: initialQrCode } = data;
@@ -30,6 +38,8 @@ export default function QRCard({ data, onRefresh }) {
       setLoadingQr(false);
     }
   }
+
+  const left = booking.qrStatus === "checked-out" ? daysLeft(booking) : null;
 
   const rows = [
     ["Equipment", `${booking.equipmentId}${equipment ? ` · ${equipment.type}` : ""}`],
@@ -72,6 +82,23 @@ export default function QRCard({ data, onRefresh }) {
               />
             )}
             <Badge status={booking.qrStatus} />
+            {left != null && (
+              <span
+                className={`badge ${
+                  left < 0
+                    ? "bg-red-50 text-red-700 ring-red-600/20"
+                    : left <= 2
+                    ? "bg-amber-50 text-amber-700 ring-amber-600/20"
+                    : "bg-stone-100 text-stone-600 ring-stone-500/20"
+                }`}
+              >
+                {left < 0
+                  ? `${Math.abs(left)} day${Math.abs(left) === 1 ? "" : "s"} overdue`
+                  : left === 0
+                  ? "due today"
+                  : `${left} day${left === 1 ? "" : "s"} left`}
+              </span>
+            )}
           </div>
 
           <dl className="mt-4 grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-x-6 gap-y-3">
