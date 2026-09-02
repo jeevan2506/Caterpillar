@@ -113,6 +113,15 @@ async function checkRentalAlerts() {
             message,
           });
 
+          // Also dispatch auto alert to Admin phone
+          const adminUser = await User.findOne({ role: "admin" });
+          const adminPhone = process.env.ADMIN_ALERT_PHONE || (adminUser ? adminUser.phone : null);
+          if (adminPhone) {
+            const adminMessage = `Smart Rental Tracking [ADMIN ALERT]: Booking ${booking.bookingId} (${booking.equipmentId} · ${equipmentType}) rented by ${user ? user.name : booking.userId} (${userPhone || "No phone"}) is OVERDUE by ${durationStr}. Expected return was ${expectedReturn.toLocaleDateString()}.`;
+            console.log(`[Alert Service] Dispatching overdue auto alert to Admin (${adminPhone})...`);
+            await sendSms({ to: adminPhone, message: adminMessage });
+          }
+
           booking.overdueSmsSent = true;
           booking.overdueSmsSentAt = now;
           booking.lastSmsStatus = smsResult.success ? "sent" : "failed";

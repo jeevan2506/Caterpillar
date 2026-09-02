@@ -268,4 +268,91 @@ router.get("/:userId", async (req, res) => {
   }
 });
 
+// POST /api/bookings/:bookingId/send-reminder-sms - Send remaining time SMS alert to customer
+router.post("/:bookingId/send-reminder-sms", async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { customPhone, customMessage } = req.body || {};
+
+    const booking = await Booking.findOne({ bookingId });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const equipment = await Equipment.findOne({ equipmentId: booking.equipmentId });
+    const user = await User.findOne({
+      $or: [{ userId: booking.userId }, { username: booking.userId }],
+    });
+
+    const targetPhone = customPhone || (user ? user.phone : null);
+    if (!targetPhone) {
+      return res.status(400).json({
+        message: "Customer phone number is missing. Please enter a valid phone number.",
+      });
+    }
+
+    const now = new Date();
+    const expectedReturn = booking.expectedReturnDate
+      ? new Date(booking.expectedReturnDate)
+      : booking.checkOutDate
+      ? new Date(new Date(booking.checkOutDate).getTime() + (booking.rentalDays || 7) * 86400000)
+      : new Date(now.getTime() + (booking.rentalDays || 7) * 86400000);
+
+    const diffMs = expectedReturn.getTime() - now.getTime();
+    const { formatDuration } = require("../services/alertService");
+    const { sendSms } = require("../services/smsService");
+
+    const durationStr = formatDuration(Math.abs(diffMs));
+    const equipmentType = equipment ? equipment.type : "Equipment";
+
+    let message = customMessage;
+    if (!message || !message.trim()) {
+      if (diffMs < 0) {
+        message = `Smart Rental Tracking: Your rental of ${booking.equipmentId} (${equipmentType}) is OVERDUE by ${durationStr}. Return date was ${expectedReturn.toLocaleDateString()}. Please return the vehicle immediately. Thank you.`;
+      } else {
+        message = `Smart Rental Tracking: Reminder \u2014 You have ${durationStr} remaining on your rental of ${booking.equipmentId} (${equipmentType}). Due date: ${expectedReturn.toLocaleDateString()}. Thank you.`;
+      }
+    }
+
+    const smsResult = await sendSms({
+      to: targetPhone,
+      message,
+    });
+
+    booking.lastSmsStatus = smsResult.success ? "sent" : "failed";
+    booking.lastSmsError = smsResult.success ? null : smsResult.error;
+    if (diffMs < 0) {
+      booking.overdueSmsSent = true;
+      booking.overdueSmsSentAt = now;
+    } else {
+      booking.dueSoonSmsSent = true;
+      booking.dueSoonSmsSentAt = now;
+    }
+    await booking.save();
+
+    if (!smsResult.success) {
+      return res.status(502).json({
+        success: false,
+        message: `Failed to dispatch SMS: ${smsResult.error || "Twilio error"}`,
+        error: smsResult.error,
+        details: { phone: targetPhone, message },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `SMS alert successfully sent to ${targetPhone}.`,
+      messageSid: smsResult.messageSid,
+      details: {
+        to: targetPhone,
+        remainingTime: diffMs < 0 ? `Overdue by ${durationStr}` : `${durationStr} remaining`,
+        expectedReturnDate: expectedReturn,
+        message,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to send SMS alert", error: err.message });
+  }
+});
+
 module.exports = router;

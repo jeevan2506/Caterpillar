@@ -72,15 +72,33 @@ async function sendSms({ to, message }) {
     }
 
     const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-    if (!messagingServiceSid) {
-      console.warn("[SMS Service] TWILIO_MESSAGING_SERVICE_SID is not set in environment variables.");
-      return { success: false, error: "TWILIO_MESSAGING_SERVICE_SID not configured" };
+    const fromPhone = process.env.TWILIO_FROM || process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM_NUMBER;
+    const isSimulate = process.env.TWILIO_SIMULATE_SMS === "true";
+
+    if (isSimulate) {
+      console.log(`[SMS Service - SIMULATION] Dispatched mock SMS to ${normalizedPhone}: "${message.trim()}"`);
+      return {
+        success: true,
+        messageSid: `SM_SIMULATED_${Date.now()}`,
+        simulated: true,
+      };
     }
 
     const client = getTwilioClient();
     if (!client) {
-      console.warn("[SMS Service] Twilio credentials (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN) are missing.");
-      return { success: false, error: "Twilio credentials not configured" };
+      console.warn("[SMS Service] Twilio credentials (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN) are missing in backend/.env.");
+      return {
+        success: false,
+        error: "Twilio credentials missing. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in backend/.env (or set TWILIO_SIMULATE_SMS=true for local simulation)",
+      };
+    }
+
+    if (!messagingServiceSid && !fromPhone) {
+      console.warn("[SMS Service] Neither TWILIO_MESSAGING_SERVICE_SID nor TWILIO_PHONE_NUMBER is configured in backend/.env.");
+      return {
+        success: false,
+        error: "TWILIO_MESSAGING_SERVICE_SID (or TWILIO_PHONE_NUMBER) is not configured in backend/.env (or set TWILIO_SIMULATE_SMS=true for local simulation)",
+      };
     }
 
     // Mask phone number for safe logging (e.g. +91******3210)
@@ -89,13 +107,20 @@ async function sendSms({ to, message }) {
         ? normalizedPhone.slice(0, 3) + "*".repeat(normalizedPhone.length - 7) + normalizedPhone.slice(-4)
         : normalizedPhone;
 
-    console.log(`[SMS Service] Dispatching SMS via Messaging Service to ${maskedPhone}...`);
+    console.log(`[SMS Service] Dispatching SMS to ${maskedPhone}...`);
 
-    const result = await client.messages.create({
+    const payload = {
       body: message.trim(),
-      messagingServiceSid: messagingServiceSid,
       to: normalizedPhone,
-    });
+    };
+
+    if (messagingServiceSid) {
+      payload.messagingServiceSid = messagingServiceSid;
+    } else if (fromPhone) {
+      payload.from = fromPhone;
+    }
+
+    const result = await client.messages.create(payload);
 
     console.log(`[SMS Service] SMS sent successfully. SID: ${result.sid}`);
     return {
