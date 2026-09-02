@@ -15,7 +15,13 @@ cd machine-simulator
 node simulator.js
 ```
 
-By default, it sends telemetry for `EQ1001` to `http://localhost:5000` every 5 seconds.
+By default, it sends telemetry for `EQX1001` to `http://localhost:5000` every 3 seconds.
+
+> **Note:** the backend does **not** generate any telemetry on its own — a
+> machine is only ONLINE while this simulator is sending heartbeats for it.
+> Stop the simulator (`Ctrl+C`) and the backend flips that machine to
+> **OFFLINE** after the 10s timeout. Run one simulator process per machine
+> you want live (use `--id`).
 
 ---
 
@@ -48,9 +54,9 @@ node simulator.js --url=http://192.168.1.15:5000 --id=EQ1001 --site=S003
 | Option | Env Variable | Default | Description |
 | --- | --- | --- | --- |
 | `--url` | `SERVER_URL` | `http://localhost:5000` | Backend API base URL |
-| `--id` | `EQUIPMENT_ID` | `EQ1001` | Equipment ID to simulate |
+| `--id` | `EQUIPMENT_ID` | `EQX1001` | Equipment ID to simulate |
 | `--site` | `SITE_ID` | `S003` | Site ID |
-| `--interval`| `INTERVAL_MS` | `5000` | Heartbeat period in milliseconds |
+| `--interval`| `INTERVAL_MS` | `3000` | Heartbeat period in milliseconds |
 | `--status` | `MACHINE_STATUS` | `running` | `running`, `idle`, or `stopped` |
 
 ---
