@@ -6,6 +6,7 @@ const Booking = require("../models/Booking");
 const Equipment = require("../models/Equipment");
 const Operator = require("../models/Operator");
 const User = require("../models/User");
+const Maintenance = require("../models/Maintenance");
 
 // Helper: make a QR code (data URL) that encodes ONLY the bookingId
 async function makeQr(bookingId) {
@@ -376,6 +377,44 @@ router.post("/:bookingId/send-reminder-sms", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Failed to send SMS alert", error: err.message });
+  }
+});
+
+// POST /api/bookings/:bookingId/report
+// Customer flags an issue with the machine they currently have checked out.
+// Becomes a pending maintenance record the Admin sees, and trips the machine's
+// "open maintenance" anomaly.
+router.post("/:bookingId/report", async (req, res) => {
+  try {
+    const { issue, severity } = req.body;
+    if (!issue || !String(issue).trim()) {
+      return res.status(400).json({ message: "Please describe the issue." });
+    }
+
+    const booking = await Booking.findOne({ bookingId: req.params.bookingId });
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (booking.qrStatus !== "checked-out") {
+      return res.status(400).json({
+        message: "You can only report an issue while the equipment is checked out.",
+      });
+    }
+
+    const record = await Maintenance.create({
+      equipmentId: booking.equipmentId,
+      issueReported: String(issue).trim(),
+      source: "customer",
+      reportedBy: booking.userId,
+      bookingId: booking.bookingId,
+      severity: ["low", "medium", "high"].includes(severity) ? severity : "medium",
+      status: "pending",
+    });
+
+    res.status(201).json({
+      message: "Reported to the rental team. They'll follow up.",
+      record,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to report issue", error: err.message });
   }
 });
 

@@ -94,7 +94,34 @@ export default function MaintenancePanel() {
                     <td className="td font-display font-bold text-stone-900">
                       {r.equipmentId}
                     </td>
-                    <td className="td max-w-xs text-stone-600">{r.issueReported}</td>
+                    <td className="td max-w-xs text-stone-600">
+                      <div>{r.issueReported}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        {r.source === "customer" && (
+                          <span className="badge bg-amber-50 text-amber-700 ring-amber-600/20">
+                            Customer-reported
+                          </span>
+                        )}
+                        {r.severity && (
+                          <span
+                            className={`badge ${
+                              r.severity === "high"
+                                ? "bg-red-50 text-red-700 ring-red-600/20"
+                                : r.severity === "low"
+                                ? "bg-stone-100 text-stone-600 ring-stone-500/20"
+                                : "bg-amber-50 text-amber-700 ring-amber-600/20"
+                            }`}
+                          >
+                            {r.severity} severity
+                          </span>
+                        )}
+                        {r.bookingId && (
+                          <span className="text-[10px] text-stone-400">
+                            {r.bookingId}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="td whitespace-nowrap">{fmtDate(r.reportedDate)}</td>
                     <td className="td text-right tabular-nums">{r.downtimeHours}h</td>
                     <td className="td">{r.technicianId || "—"}</td>

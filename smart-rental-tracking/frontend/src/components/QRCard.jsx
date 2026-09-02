@@ -2,7 +2,7 @@ import { useState } from "react";
 import Badge from "./Badge.jsx";
 import Icon from "./Icon.jsx";
 import { fmtDate } from "../utils/helpers.js";
-import { getDynamicQr } from "../services/api.js";
+import { getDynamicQr, reportIssue } from "../services/api.js";
 import { Spinner } from "./ui.jsx";
 
 // How many whole days remain until the expected return (negative = overdue).
@@ -20,6 +20,33 @@ export default function QRCard({ data, onRefresh }) {
   const [loadingQr, setLoadingQr] = useState(false);
   const [lastGeneratedAt, setLastGeneratedAt] = useState(null);
   const [error, setError] = useState("");
+
+  // Customer "report an issue" flow (only while the machine is checked out)
+  const [reportOpen, setReportOpen] = useState(false);
+  const [issueText, setIssueText] = useState("");
+  const [severity, setSeverity] = useState("medium");
+  const [reporting, setReporting] = useState(false);
+  const [reportDone, setReportDone] = useState(false);
+  const [reportError, setReportError] = useState("");
+
+  async function submitReport(e) {
+    e.preventDefault();
+    if (!issueText.trim()) {
+      setReportError("Please describe the issue.");
+      return;
+    }
+    setReporting(true);
+    setReportError("");
+    try {
+      await reportIssue(booking.bookingId, { issue: issueText.trim(), severity });
+      setReportDone(true);
+      setIssueText("");
+    } catch (err) {
+      setReportError(err.response?.data?.message || "Could not send your report. Try again.");
+    } finally {
+      setReporting(false);
+    }
+  }
 
   const isApproved = booking.approvalStatus === "approved" || (!booking.approvalStatus && booking.paymentStatus === "paid");
   const isPending = booking.approvalStatus === "pending_approval";
@@ -127,6 +154,86 @@ export default function QRCard({ data, onRefresh }) {
               <span className="leading-relaxed">
                 Booking was rejected. Reason: {booking.rejectionReason || "Admin decision"}. Full refund processed.
               </span>
+            </div>
+          )}
+
+          {booking.qrStatus === "checked-out" && (
+            <div className="mt-4">
+              {reportDone ? (
+                <div className="flex items-start gap-2.5 rounded-xl bg-emerald-50 px-3.5 py-2.5 text-xs text-emerald-900 border border-emerald-200">
+                  <Icon name="check" className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+                  <span className="leading-relaxed">
+                    Thanks — your report reached the rental team. They&apos;ll follow up on{" "}
+                    {booking.equipmentId}.
+                  </span>
+                </div>
+              ) : !reportOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setReportOpen(true)}
+                  className="btn btn-ghost btn-sm inline-flex items-center gap-1.5 text-xs"
+                >
+                  <Icon name="alert" className="h-3.5 w-3.5 text-amber-600" />
+                  Report an issue with this equipment
+                </button>
+              ) : (
+                <form
+                  onSubmit={submitReport}
+                  className="rounded-xl border border-stone-200 bg-stone-50/70 p-3.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-stone-500">
+                      Report an issue
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReportOpen(false);
+                        setReportError("");
+                      }}
+                      className="text-stone-400 hover:text-stone-600"
+                    >
+                      <Icon name="close" className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <textarea
+                    className="input mt-2 min-h-[76px] resize-y"
+                    placeholder="What's wrong? e.g. hydraulic leak, warning light, unusual noise…"
+                    value={issueText}
+                    onChange={(e) => setIssueText(e.target.value)}
+                  />
+                  <div className="mt-2 flex items-center gap-2">
+                    <label className="text-[11px] font-semibold uppercase tracking-[0.09em] text-stone-500">
+                      Severity
+                    </label>
+                    <select
+                      className="input h-9 min-h-0 w-auto py-1 text-xs"
+                      value={severity}
+                      onChange={(e) => setSeverity(e.target.value)}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                  {reportError && (
+                    <p className="mt-2 text-xs text-red-600">{reportError}</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={reporting}
+                    className="btn btn-dark btn-sm mt-3 w-full text-xs"
+                  >
+                    {reporting ? (
+                      <>
+                        <Spinner className="h-3.5 w-3.5" /> Sending…
+                      </>
+                    ) : (
+                      "Send report"
+                    )}
+                  </button>
+                </form>
+              )}
             </div>
           )}
 

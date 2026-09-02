@@ -30,6 +30,8 @@ export const getDynamicQr = (bookingId) =>
   api.get(`/bookings/${bookingId}/dynamic-qr`);
 export const sendRentalReminderSms = (bookingId, data) =>
   api.post(`/bookings/${bookingId}/send-reminder-sms`, data);
+export const reportIssue = (bookingId, data) =>
+  api.post(`/bookings/${bookingId}/report`, data);
 
 // ---- Razorpay ----
 export const createRazorpayOrder = (data) => api.post("/create-order", data);

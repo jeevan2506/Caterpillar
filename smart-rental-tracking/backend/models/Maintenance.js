@@ -12,6 +12,12 @@ const maintenanceSchema = new mongoose.Schema({
     enum: ["pending", "in-progress", "resolved"],
     default: "pending",
   },
+  // Where the report came from — "admin" (default) or "customer" (raised from
+  // My Bookings while the machine is checked out).
+  source: { type: String, enum: ["admin", "customer"], default: "admin" },
+  reportedBy: { type: String, default: null },
+  bookingId: { type: String, default: null },
+  severity: { type: String, enum: ["low", "medium", "high", null], default: null },
 });
 
 module.exports = mongoose.model("Maintenance", maintenanceSchema);
