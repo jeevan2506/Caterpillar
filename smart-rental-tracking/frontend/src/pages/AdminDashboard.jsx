@@ -132,7 +132,7 @@ export default function AdminDashboard() {
         <aside
           className={`${
             menuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
-          } fixed left-0 top-0 z-50 h-full w-72 max-w-[85vw] border-r border-stone-200 bg-white p-4 transition-transform duration-200 ease-in-out md:static md:top-16 md:z-10 md:h-[calc(100vh-4rem)] md:w-64 md:translate-x-0 md:border-r md:p-3 md:shadow-none overflow-y-auto`}
+          } fixed left-0 top-0 z-50 h-full w-72 max-w-[85vw] shrink-0 overflow-y-auto border-r border-stone-200 bg-white p-4 transition-transform duration-200 ease-in-out md:sticky md:top-16 md:z-10 md:h-fit md:max-h-[calc(100vh-4rem)] md:w-64 md:translate-x-0 md:self-start md:border-b md:rounded-br-2xl md:p-3 md:shadow-none`}
         >
           <div className="flex items-center justify-between pb-3 md:hidden border-b border-stone-100 mb-2">
             <div className="flex items-center gap-2">

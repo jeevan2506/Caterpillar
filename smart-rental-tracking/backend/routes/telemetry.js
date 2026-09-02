@@ -25,16 +25,44 @@ function formatTelemetry(doc) {
   };
 }
 
+function getPossibleEquipmentIds(rawId) {
+  if (!rawId) return [];
+  const id = String(rawId).trim();
+  const set = new Set([id, id.toUpperCase()]);
+
+  // Handle EQ1001 <-> EQX1001 prefix mapping
+  if (/^eq\d+$/i.test(id)) {
+    const num = id.replace(/^eq/i, "");
+    set.add(`EQX${num}`);
+    set.add(`EQ${num}`);
+  } else if (/^eqx\d+$/i.test(id)) {
+    const num = id.replace(/^eqx/i, "");
+    set.add(`EQ${num}`);
+    set.add(`EQX${num}`);
+  }
+
+  return Array.from(set);
+}
+
 // POST /api/telemetry/:equipmentId (or POST /api/telemetry with equipmentId in body)
 router.post("/:equipmentId?", async (req, res) => {
   try {
-    const equipmentId = req.params.equipmentId || req.body.equipmentId;
+    const rawEquipmentId = req.params.equipmentId || req.body.equipmentId;
 
-    if (!equipmentId) {
+    if (!rawEquipmentId) {
       return res.status(400).json({
         success: false,
         message: "equipmentId is required",
       });
+    }
+
+    const possibleIds = getPossibleEquipmentIds(rawEquipmentId);
+    let canonicalId = possibleIds[0];
+
+    // Find if a matching equipment exists in master database
+    const masterEq = await Equipment.findOne({ equipmentId: { $in: possibleIds } });
+    if (masterEq) {
+      canonicalId = masterEq.equipmentId;
     }
 
     const {
@@ -81,22 +109,30 @@ router.post("/:equipmentId?", async (req, res) => {
       updateFields.siteId = siteId;
     }
 
-    // Upsert telemetry record
-    const telemetry = await EquipmentTelemetry.findOneAndUpdate(
-      { equipmentId },
-      { $set: updateFields },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
-    );
+    // Upsert telemetry record for canonical ID and any aliases
+    const targetIds = Array.from(new Set([canonicalId, ...possibleIds]));
+    let mainTelemetry = null;
 
-    // If siteId is provided, optionally sync with equipment master
+    for (const eqId of targetIds) {
+      const tel = await EquipmentTelemetry.findOneAndUpdate(
+        { equipmentId: eqId },
+        { $set: updateFields },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
+      if (eqId === canonicalId || !mainTelemetry) {
+        mainTelemetry = tel;
+      }
+    }
+
+    // If siteId is provided, sync with equipment master
     if (siteId) {
-      await Equipment.findOneAndUpdate(
-        { equipmentId },
+      await Equipment.updateMany(
+        { equipmentId: { $in: targetIds } },
         { $set: { siteId } }
       ).catch(() => {});
     }
 
-    const formatted = formatTelemetry(telemetry);
+    const formatted = formatTelemetry(mainTelemetry);
 
     return res.status(200).json({
       success: true,
@@ -117,11 +153,15 @@ router.post("/:equipmentId?", async (req, res) => {
 router.get("/:equipmentId", async (req, res) => {
   try {
     const { equipmentId } = req.params;
-    const telemetry = await EquipmentTelemetry.findOne({ equipmentId });
+    const possibleIds = getPossibleEquipmentIds(equipmentId);
+
+    const telemetry = await EquipmentTelemetry.findOne({
+      equipmentId: { $in: possibleIds },
+    }).sort({ lastSeen: -1 });
 
     if (!telemetry) {
       // Check if equipment exists in master database to provide helpful context
-      const equipment = await Equipment.findOne({ equipmentId });
+      const equipment = await Equipment.findOne({ equipmentId: { $in: possibleIds } });
       const timeoutSec = getTimeoutSeconds();
 
       return res.json({
@@ -151,9 +191,27 @@ router.get("/:equipmentId", async (req, res) => {
 // GET /api/telemetry
 router.get("/", async (req, res) => {
   try {
-    const telemetries = await EquipmentTelemetry.find();
+    const telemetries = await EquipmentTelemetry.find().sort({ lastSeen: -1 });
     const formattedList = telemetries.map(formatTelemetry);
-    return res.json(formattedList);
+
+    // Ensure aliases (EQ1001 <-> EQX1001) are also populated in the list
+    const existingIds = new Set(formattedList.map((t) => t.equipmentId));
+    const augmented = [...formattedList];
+
+    formattedList.forEach((item) => {
+      const possible = getPossibleEquipmentIds(item.equipmentId);
+      possible.forEach((aliasId) => {
+        if (!existingIds.has(aliasId)) {
+          existingIds.add(aliasId);
+          augmented.push({
+            ...item,
+            equipmentId: aliasId,
+          });
+        }
+      });
+    });
+
+    return res.json(augmented);
   } catch (err) {
     return res.status(500).json({
       message: "Failed to fetch all telemetry records",
