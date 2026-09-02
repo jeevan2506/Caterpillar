@@ -15,13 +15,24 @@ export default function DemandInsights({ equipment, telemetry = [], maintenance 
   const maxCount = Math.max(1, ...Object.values(counts));
   const maxAvg = Math.max(1, ...Object.values(avgDays));
 
-  // Fleet usage totals (rented hours = per-day rate x operating days)
+  // Fleet usage totals directly from live telematics & telemetry streams
   const round = (n) => Math.round(n);
+  const telMap = {};
+  telemetry.forEach((t) => {
+    if (t && t.equipmentId) telMap[t.equipmentId] = t;
+  });
+
   const totalEngine = round(
-    equipment.reduce((s, e) => s + e.engineHoursPerDay * e.operatingDays, 0)
+    equipment.reduce((s, e) => {
+      const t = telMap[e.equipmentId];
+      return s + (t?.engineHours ?? e.engineHoursPerDay ?? 0);
+    }, 0)
   );
   const totalIdle = round(
-    equipment.reduce((s, e) => s + e.idleHoursPerDay * e.operatingDays, 0)
+    equipment.reduce((s, e) => {
+      const t = telMap[e.equipmentId];
+      return s + (t?.idleHours ?? e.idleHoursPerDay ?? 0);
+    }, 0)
   );
   const totalDays = equipment.reduce((s, e) => s + (e.operatingDays || 0), 0);
   const fleetUtil = totalEngine + totalIdle > 0
@@ -30,14 +41,15 @@ export default function DemandInsights({ equipment, telemetry = [], maintenance 
   const totalFuel = round(telemetry.reduce((s, t) => s + (t.fuelConsumed || 0), 0));
   const totalDowntime = round(maintenance.reduce((s, m) => s + (m.downtimeHours || 0), 0));
 
-  // Usage by site
+  // Usage by site from live telematics
   const bySite = {};
   equipment.forEach((e) => {
-    const key = e.siteId || "Unassigned";
+    const t = telMap[e.equipmentId];
+    const key = t?.siteId || e.siteId || "Yard";
     const s = (bySite[key] = bySite[key] || { machines: 0, engine: 0, idle: 0, days: 0 });
     s.machines += 1;
-    s.engine += e.engineHoursPerDay * e.operatingDays;
-    s.idle += e.idleHoursPerDay * e.operatingDays;
+    s.engine += t?.engineHours ?? e.engineHoursPerDay ?? 0;
+    s.idle += t?.idleHours ?? e.idleHoursPerDay ?? 0;
     s.days += e.operatingDays || 0;
   });
   const siteRows = Object.entries(bySite).sort((a, b) => b[1].engine - a[1].engine);

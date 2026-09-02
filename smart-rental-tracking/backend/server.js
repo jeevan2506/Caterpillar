@@ -46,6 +46,7 @@ app.use((err, req, res, next) => {
 });
 
 const { startAlertScheduler } = require("./services/alertService");
+const { startTelemetryStreamer } = require("./services/telemetryService");
 const { buildSummary: warmForecastCache } = require("./routes/forecast");
 
 const PORT = process.env.PORT || 5000;
@@ -57,6 +58,7 @@ mongoose
   .then(() => {
     console.log("Connected to MongoDB");
     startAlertScheduler();
+    startTelemetryStreamer();
     warmForecastCache().catch(() => {}); // pre-build so the first dashboard load is fast
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
