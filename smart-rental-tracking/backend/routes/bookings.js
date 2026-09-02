@@ -238,7 +238,11 @@ router.get("/:bookingId/dynamic-qr", async (req, res) => {
 // GET /api/bookings/:userId - Fetch user bookings
 router.get("/:userId", async (req, res) => {
   try {
-    const bookings = await Booking.find({ userId: req.params.userId }).sort({
+    const bookings = await Booking.find({
+      userId: req.params.userId,
+      qrStatus: { $nin: ["completed", "expired"] },
+      approvalStatus: { $ne: "rejected" },
+    }).sort({
       createdAt: -1,
     });
 
