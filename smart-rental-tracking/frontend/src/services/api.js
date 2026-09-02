@@ -56,4 +56,7 @@ export const getForecast = (site_id, equipment_type) =>
 export const getForecastSummary = () => api.get("/forecast/summary");
 export const getForecastMeta = () => api.get("/forecast/meta");
 
+// ---- Fleet Rebalancing / Auto-Dispatch ----
+export const getRebalance = () => api.get("/rebalance");
+
 export default api;

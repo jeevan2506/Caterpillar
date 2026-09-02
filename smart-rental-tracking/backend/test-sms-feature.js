@@ -93,7 +93,7 @@ async function runTests() {
     {
       bookingId: "TEST-BOOK-NORMAL",
       userId: "TEST_USR_OVERDUE",
-      equipmentId: "EQ1001",
+      equipmentId: "EQX1001",
       qrStatus: "checked-out",
       checkOutDate: now,
       expectedReturnDate: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
@@ -109,7 +109,7 @@ async function runTests() {
     {
       bookingId: "TEST-BOOK-DUESOON",
       userId: "TEST_USR_DUESOON",
-      equipmentId: "EQ1002",
+      equipmentId: "EQX1002",
       qrStatus: "checked-out",
       checkOutDate: new Date(now.getTime() - 2 * 60 * 60 * 1000),
       expectedReturnDate: new Date(now.getTime() + 30 * 60 * 1000), // due in 30 mins
@@ -125,7 +125,7 @@ async function runTests() {
     {
       bookingId: "TEST-BOOK-OVERDUE",
       userId: "TEST_USR_OVERDUE",
-      equipmentId: "EQ1003",
+      equipmentId: "EQX1003",
       qrStatus: "checked-out",
       checkOutDate: new Date(now.getTime() - 26 * 60 * 60 * 1000),
       expectedReturnDate: new Date(now.getTime() - 2 * 60 * 60 * 1000), // overdue by 2 hours
@@ -141,7 +141,7 @@ async function runTests() {
     {
       bookingId: "TEST-BOOK-NOPHONE",
       userId: "TEST_USR_NOPHONE",
-      equipmentId: "EQ1004",
+      equipmentId: "EQX1004",
       qrStatus: "checked-out",
       checkOutDate: new Date(now.getTime() - 26 * 60 * 60 * 1000),
       expectedReturnDate: new Date(now.getTime() - 1 * 60 * 60 * 1000),

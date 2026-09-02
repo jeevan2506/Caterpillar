@@ -9,21 +9,21 @@
  * 
  * Configuration options via environment variables or CLI args:
  *   SERVER_URL=http://localhost:5000 (or IP address of your server)
- *   EQUIPMENT_ID=EQ1001
+ *   EQUIPMENT_ID=EQX1001
  *   SITE_ID=S003
  *   INTERVAL_MS=5000
  *   MACHINE_STATUS=running (running | idle | stopped)
  * 
  * Examples:
- *   SERVER_URL=http://192.168.1.15:5000 EQUIPMENT_ID=EQ1001 node simulator.js
- *   node simulator.js --url=http://192.168.1.15:5000 --id=EQ1001
+ *   SERVER_URL=http://192.168.1.15:5000 EQUIPMENT_ID=EQX1001 node simulator.js
+ *   node simulator.js --url=http://192.168.1.15:5000 --id=EQX1001
  */
 
 const http = require("http");
 const https = require("https");
 const url = require("url");
 
-// Parse CLI arguments: e.g. --url=http://... --id=EQ1001 --status=running
+// Parse CLI arguments: e.g. --url=http://... --id=EQX1001 --status=running
 const args = {};
 process.argv.slice(2).forEach((arg) => {
   if (arg.startsWith("--")) {
@@ -38,7 +38,7 @@ const SERVER_URL = (
   "http://localhost:5000"
 ).replace(/\/$/, "");
 
-const EQUIPMENT_ID = process.env.EQUIPMENT_ID || args.id || "EQ1001";
+const EQUIPMENT_ID = process.env.EQUIPMENT_ID || args.id || "EQX1001";
 const SITE_ID = process.env.SITE_ID || args.site || "S003";
 // 3s heartbeat: well under the 10s offline threshold, so a single dropped
 // request doesn't flip the machine Offline.

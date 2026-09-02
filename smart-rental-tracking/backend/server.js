@@ -15,6 +15,7 @@ const chatRoutes = require("./routes/chat");
 const telemetryRoutes = require("./routes/telemetry");
 const forecastRoutes = require("./routes/forecast");
 const razorpayRoutes = require("./routes/razorpay");
+const rebalanceRoutes = require("./routes/rebalance");
 
 const app = express();
 app.use(cors());
@@ -34,6 +35,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/telemetry", telemetryRoutes);
 app.use("/api/forecast", forecastRoutes);
+app.use("/api/rebalance", rebalanceRoutes);
 app.use("/api", razorpayRoutes);
 app.use("/api", chatbotRoutes);
 

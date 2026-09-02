@@ -16,7 +16,7 @@ const SALT_ROUNDS = 10;
 
 const equipmentData = [
   {
-    equipmentId: "EQ1001",
+    equipmentId: "EQX1001",
     type: "Excavator",
     siteId: "S003",
     status: "available",
@@ -28,7 +28,7 @@ const equipmentData = [
     lastOperatorId: "OP101",
   },
   {
-    equipmentId: "EQ1002",
+    equipmentId: "EQX1002",
     type: "Crane",
     siteId: null,
     status: "available",
@@ -40,7 +40,7 @@ const equipmentData = [
     lastOperatorId: null,
   },
   {
-    equipmentId: "EQ1003",
+    equipmentId: "EQX1003",
     type: "Bulldozer",
     siteId: "S002",
     status: "available",
@@ -52,7 +52,7 @@ const equipmentData = [
     lastOperatorId: "OP203",
   },
   {
-    equipmentId: "EQ1004",
+    equipmentId: "EQX1004",
     type: "Excavator",
     siteId: "S004",
     status: "available",
@@ -64,7 +64,7 @@ const equipmentData = [
     lastOperatorId: "OP106",
   },
   {
-    equipmentId: "EQ1005",
+    equipmentId: "EQX1005",
     type: "Bulldozer",
     siteId: "S006",
     status: "available",
@@ -76,7 +76,7 @@ const equipmentData = [
     lastOperatorId: "OP301",
   },
   {
-    equipmentId: "EQ1006",
+    equipmentId: "EQX1006",
     type: "Grader",
     siteId: "S001",
     status: "available",
@@ -88,7 +88,7 @@ const equipmentData = [
     lastOperatorId: "OP114",
   },
   {
-    equipmentId: "EQ1007",
+    equipmentId: "EQX1007",
     type: "Excavator",
     siteId: null,
     status: "available",
@@ -167,7 +167,7 @@ async function seed() {
 
   const maintenanceData = [
     {
-      equipmentId: "EQ1002",
+      equipmentId: "EQX1002",
       issueReported: "Hydraulic leak in boom cylinder",
       reportedDate: new Date("2025-04-02"),
       resolvedDate: null,
@@ -176,7 +176,7 @@ async function seed() {
       status: "pending",
     },
     {
-      equipmentId: "EQ1005",
+      equipmentId: "EQX1005",
       issueReported: "Engine overheating under load",
       reportedDate: new Date("2025-02-05"),
       resolvedDate: new Date("2025-02-07"),
@@ -185,7 +185,7 @@ async function seed() {
       status: "resolved",
     },
     {
-      equipmentId: "EQ1001",
+      equipmentId: "EQX1001",
       issueReported: "Track misalignment causing uneven wear",
       reportedDate: new Date("2025-04-18"),
       resolvedDate: null,

@@ -7,6 +7,7 @@ const Booking = require("../models/Booking");
 const Operator = require("../models/Operator");
 const EquipmentTelemetry = require("../models/EquipmentTelemetry");
 const { buildSummary: buildForecastSummary } = require("./forecast");
+const { buildRebalancePlan } = require("./rebalance");
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
@@ -166,6 +167,15 @@ router.post("/", async (req, res) => {
       console.warn("forecast summary unavailable for chat:", e.message);
     }
 
+    // Rebalancing plan — which idle machine to move to which forecast shortage
+    let rebalance = null;
+    try {
+      const plan = await buildRebalancePlan();
+      rebalance = plan.recommendations.slice(0, 8);
+    } catch (e) {
+      console.warn("rebalance plan unavailable for chat:", e.message);
+    }
+
     const context = JSON.stringify({
       equipment,
       maintenance,
@@ -174,6 +184,7 @@ router.post("/", async (req, res) => {
       telemetry,
       anomalies,
       demandForecast,
+      rebalance,
     });
 
     const groqRes = await fetch(GROQ_URL, {
@@ -195,10 +206,12 @@ router.post("/", async (req, res) => {
               "and operator IDs. If the context does not contain the answer, say so.\n" +
               "For demand / shortage / 'what will be needed' questions, use " +
               "context.demandForecast (peak month, predicted vs available units, " +
-              "shortage/surplus per site + equipment type).\n\n" +
+              "shortage/surplus per site + equipment type).\n" +
+              "For 'what should we move / relocate / pre-position' questions, use " +
+              "context.rebalance (which idle machine to move to which shortage site).\n\n" +
               "This reply is shown in a narrow chat window. Reply in short plain " +
               "sentences. When listing items, use simple dash bullets like:\n" +
-              "- EQ1001 (site S003): idle ratio 87%\n" +
+              "- EQX1001 (site S003): idle ratio 87%\n" +
               "Do NOT use markdown tables, pipe characters, or headings. Keep it under 120 words.",
           },
           { role: "user", content: `CONTEXT:\n${context}\n\nQUESTION: ${question}` },

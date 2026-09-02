@@ -6,6 +6,7 @@ const Maintenance = require("../models/Maintenance");
 const Booking = require("../models/Booking");
 const Operator = require("../models/Operator");
 const EquipmentTelemetry = require("../models/EquipmentTelemetry");
+const { buildSummary: buildForecastSummary } = require("./forecast");
 
 const getTimeoutSeconds = () =>
   parseInt(process.env.TELEMETRY_TIMEOUT_SECONDS || "10", 10);
@@ -38,7 +39,14 @@ router.get("/chatbot-context", async (req, res) => {
       };
     });
 
-    res.json({ equipment, maintenance, bookings, operators, telemetry });
+    let demandForecast = null;
+    try {
+      demandForecast = await buildForecastSummary();
+    } catch (e) {
+      console.warn("forecast unavailable for chatbot-context:", e.message);
+    }
+
+    res.json({ equipment, maintenance, bookings, operators, telemetry, demandForecast });
   } catch (err) {
     res.status(500).json({ message: "Failed to build chatbot context", error: err.message });
   }

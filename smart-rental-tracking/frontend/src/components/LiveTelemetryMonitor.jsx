@@ -3,7 +3,7 @@ import Icon from "./Icon.jsx";
 import { getAllTelemetry } from "../services/api.js";
 
 export default function LiveTelemetryMonitor({ equipment = [] }) {
-  const [selectedId, setSelectedId] = useState("EQ1001");
+  const [selectedId, setSelectedId] = useState("EQX1001");
   const [telemetryMap, setTelemetryMap] = useState({});
   const [now, setNow] = useState(Date.now());
   const [autoPoll] = useState(true);
@@ -13,7 +13,7 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
   // Default fallback list of equipment IDs if none passed
   const availableEqIds = equipment.length > 0
     ? equipment.map((e) => e.equipmentId)
-    : ["EQ1001", "EQ1002", "EQ1003", "EQ1004", "EQ1005", "EQ1006", "EQ1007"];
+    : ["EQX1001", "EQX1002", "EQX1003", "EQX1004", "EQX1005", "EQX1006", "EQX1007"];
 
   // Fetch telemetry for all machines. Responses can arrive out of order, so
   // tag each request and ignore any that isn't the latest — otherwise a slow
