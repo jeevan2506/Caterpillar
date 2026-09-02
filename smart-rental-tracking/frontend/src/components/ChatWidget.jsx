@@ -40,12 +40,18 @@ export default function ChatWidget() {
     try {
       let reply;
       if (WEBHOOK_URL) {
-        const res = await axios.post(WEBHOOK_URL, { question });
-        reply =
-          res.data?.answer ||
-          res.data?.reply ||
-          res.data?.output ||
-          (typeof res.data === "string" ? res.data : JSON.stringify(res.data));
+        try {
+          const res = await axios.post(WEBHOOK_URL, { question });
+          reply =
+            res.data?.answer ||
+            res.data?.reply ||
+            res.data?.output ||
+            (typeof res.data === "string" ? res.data : JSON.stringify(res.data));
+        } catch {
+          // n8n unreachable → fall back to the backend's built-in /api/chat
+          const res = await api.post("/chat", { question });
+          reply = res.data.answer;
+        }
       } else {
         const res = await api.post("/chat", { question });
         reply = res.data.answer;
