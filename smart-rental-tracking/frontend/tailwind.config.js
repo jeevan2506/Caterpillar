@@ -24,9 +24,12 @@ export default {
         display: ["Sora", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        card: "0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.06)",
-        lift: "0 18px 40px -12px rgba(16,24,40,0.18)",
+        // warm-tinted, layered shadows — reads softer and more considered than a flat drop
+        card: "0 1px 2px rgba(28,24,16,0.04), 0 4px 12px -2px rgba(28,24,16,0.05), 0 12px 28px -12px rgba(28,24,16,0.06)",
+        "card-hover": "0 1px 2px rgba(28,24,16,0.05), 0 8px 20px -4px rgba(28,24,16,0.08), 0 24px 48px -16px rgba(28,24,16,0.12)",
+        lift: "0 20px 44px -14px rgba(28,24,16,0.20)",
         glow: "0 0 0 1px rgba(255,205,17,0.35), 0 8px 30px -6px rgba(255,205,17,0.25)",
+        "inner-t": "inset 0 1px 0 rgba(255,255,255,0.10)",
       },
       keyframes: {
         "fade-up": {

@@ -160,15 +160,15 @@ export default function AdminDashboard() {
                 <button
                   key={n.label}
                   onClick={() => pick(n.label)}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition min-h-[44px] ${
+                  className={`flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 ${
                     on
-                      ? "bg-cat-ink text-white shadow-sm"
-                      : "text-stone-600 hover:bg-stone-100 active:bg-stone-200"
+                      ? "bg-gradient-to-b from-[#262320] to-cat-ink text-white shadow-[0_1px_0_rgba(255,255,255,0.05)_inset,0_6px_16px_-8px_rgba(0,0,0,0.4)]"
+                      : "text-stone-600 hover:bg-stone-900/[0.04] hover:text-stone-900 active:bg-stone-900/[0.07]"
                   }`}
                 >
                   <Icon
                     name={n.icon}
-                    className={`h-[18px] w-[18px] shrink-0 ${on ? "text-cat-yellow" : "text-stone-500"}`}
+                    className={`h-[18px] w-[18px] shrink-0 transition-colors ${on ? "text-cat-yellow" : "text-stone-400"}`}
                   />
                   <span className="truncate">{n.label}</span>
                   {n.label === "Vehicle Rentals" && activeRentalsCount > 0 && (
@@ -414,13 +414,23 @@ function StatCard({ label, value, icon, tone }) {
   const amber = tone === "amber" && active;
   const purple = tone === "purple" && active;
   return (
-    <div className="card p-3 sm:p-4 flex flex-col justify-between">
+    <div
+      className={`card relative flex flex-col justify-between overflow-hidden p-3.5 sm:p-4 ${
+        active ? "border-stone-300/60" : ""
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        className={`absolute inset-x-0 top-0 h-[3px] ${
+          red ? "bg-red-500" : amber ? "bg-amber-500" : purple ? "bg-purple-500" : active ? "bg-cat-yellow" : "bg-stone-200"
+        }`}
+      />
       <div className="flex items-start justify-between gap-1">
-        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-stone-400 leading-tight">
+        <p className="text-[10px] font-semibold uppercase leading-tight tracking-[0.09em] text-stone-400 sm:text-[11px]">
           {label}
         </p>
         <span
-          className={`grid h-7 w-7 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-lg ${
+          className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg sm:h-8 sm:w-8 ${
             red
               ? "bg-red-50 text-red-500"
               : amber
@@ -434,7 +444,7 @@ function StatCard({ label, value, icon, tone }) {
         </span>
       </div>
       <p
-        className={`mt-2 font-display text-2xl sm:text-3xl font-extrabold tracking-tight ${
+        className={`mt-2 font-display text-2xl font-extrabold tracking-tight tabular-nums sm:text-3xl ${
           red ? "text-red-600" : amber ? "text-amber-600" : purple ? "text-purple-700" : "text-stone-900"
         }`}
       >

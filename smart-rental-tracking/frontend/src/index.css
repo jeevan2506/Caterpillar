@@ -10,9 +10,15 @@
   body {
     margin: 0;
     font-family: theme("fontFamily.sans");
-    background-color: #f6f5f3;
+    /* subtle warm paper ground with a barely-there vignette */
+    background-color: #f7f6f2;
+    background-image: radial-gradient(120% 60% at 50% 0%, #fbfaf7 0%, #f7f6f2 55%);
+    background-attachment: fixed;
     color: #1c1917;
+    font-feature-settings: "cv05", "ss01";
+    letter-spacing: -0.005em;
   }
+  h1, h2, h3, h4 { letter-spacing: -0.02em; }
   ::selection {
     background: rgba(255, 205, 17, 0.35);
   }
@@ -35,56 +41,79 @@
 
 @layer components {
   .card {
-    @apply bg-white rounded-2xl border border-stone-200/80 shadow-card;
+    @apply rounded-2xl border border-stone-200/70 bg-white shadow-card;
+  }
+  /* opt-in interactive lift for clickable cards */
+  .card-hover {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover
+      hover:border-stone-300/70;
   }
 
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5
       text-sm font-semibold transition-all duration-150 min-h-[40px]
-      disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation;
+      disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation
+      active:scale-[0.985];
   }
   .btn-primary {
-    @apply bg-cat-yellow text-cat-ink hover:bg-cat-yellow-600 shadow-sm
-      active:scale-[0.98];
+    @apply text-cat-ink shadow-sm;
+    background-image: linear-gradient(180deg, #ffd633 0%, #ffcd11 45%, #f5c00a 100%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset,
+      0 1px 2px rgba(28, 24, 16, 0.12), 0 6px 16px -6px rgba(245, 192, 10, 0.5);
+  }
+  .btn-primary:hover {
+    background-image: linear-gradient(180deg, #ffce1f 0%, #f7c40c 50%, #ecb908 100%);
   }
   .btn-dark {
-    @apply bg-cat-ink text-white hover:bg-black active:scale-[0.98];
+    @apply text-white;
+    background-image: linear-gradient(180deg, #262320 0%, #161514 100%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 20px -8px rgba(0, 0, 0, 0.35);
+  }
+  .btn-dark:hover {
+    background-image: linear-gradient(180deg, #302c28 0%, #201d1b 100%);
   }
   .btn-ghost {
-    @apply border border-stone-300 bg-white text-stone-800 hover:bg-stone-50
-      active:scale-[0.98];
+    @apply border border-stone-300/90 bg-white/90 text-stone-800
+      backdrop-blur-sm hover:bg-stone-50 hover:border-stone-300;
   }
   .btn-sm {
     @apply px-3 py-1.5 text-xs rounded-lg min-h-[36px];
   }
 
   .input {
-    @apply w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5
+    @apply w-full rounded-xl border border-stone-300/90 bg-white px-3.5 py-2.5
       text-sm text-stone-900 placeholder:text-stone-400 outline-none min-h-[42px]
-      transition focus:border-stone-900 focus:ring-4 focus:ring-stone-900/5;
+      shadow-[0_1px_2px_rgba(28,24,16,0.03)]
+      transition focus:border-cat-ink focus:ring-4 focus:ring-cat-yellow/15;
   }
   .label {
-    @apply block text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-1.5;
+    @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.09em] text-stone-500;
   }
 
   .th {
-    @apply px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider
-      text-stone-500 bg-stone-50/80 whitespace-nowrap;
+    @apply whitespace-nowrap border-b border-stone-200 bg-stone-50/70 px-4 py-3
+      text-left text-[10.5px] font-semibold uppercase tracking-[0.1em] text-stone-500;
   }
   .td {
     @apply px-4 py-3.5 text-sm text-stone-700;
   }
 
   .badge {
-    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5
-      text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset whitespace-nowrap;
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5
+      text-[10px] font-bold uppercase tracking-[0.08em] ring-1 ring-inset;
   }
   .badge-dot {
     @apply h-1.5 w-1.5 rounded-full bg-current;
   }
 
   .section-title {
-    @apply font-display text-base sm:text-lg font-bold text-stone-900 tracking-tight;
+    @apply font-display text-base font-bold tracking-tight text-stone-900 sm:text-lg;
+  }
+
+  /* hairline that reads as a divider, not a border */
+  .hairline {
+    @apply border-b border-stone-200/70;
   }
 
   /* Smooth mobile touch scrolling containers */
