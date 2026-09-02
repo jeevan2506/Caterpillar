@@ -1,19 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import Header from "../components/Header.jsx";
 import AdminScanner from "../components/AdminScanner.jsx";
 import EquipmentTable from "../components/EquipmentTable.jsx";
 import AnomalyPanel from "../components/AnomalyPanel.jsx";
 import MaintenancePanel from "../components/MaintenancePanel.jsx";
 import DemandInsights from "../components/DemandInsights.jsx";
-import DemandForecast from "../components/DemandForecast.jsx";
-import Rebalance from "../components/Rebalance.jsx";
 import OperatorTable from "../components/OperatorTable.jsx";
 import ChatWidget from "../components/ChatWidget.jsx";
 import LiveTelemetryMonitor from "../components/LiveTelemetryMonitor.jsx";
-import BookingApprovals from "../components/BookingApprovals.jsx";
-import RentalsManagement from "../components/RentalsManagement.jsx";
 import Icon from "./../components/Icon.jsx";
 import { Loading, Alert } from "../components/ui.jsx";
+
+// Heavy / rarely-first screens — loaded on demand so the initial bundle stays small.
+const DemandForecast = lazy(() => import("../components/DemandForecast.jsx"));
+const Rebalance = lazy(() => import("../components/Rebalance.jsx"));
+const BookingApprovals = lazy(() => import("../components/BookingApprovals.jsx"));
+const RentalsManagement = lazy(() => import("../components/RentalsManagement.jsx"));
 import { getContext } from "../services/api.js";
 import { getSession } from "../services/auth.js";
 import { displayStatus, getAnomalies, fmtDate } from "../utils/helpers.js";
@@ -212,7 +214,7 @@ export default function AdminDashboard() {
 
           {!loading && tab === "Dashboard" && (
             <div className="space-y-5 sm:space-y-6">
-              <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-4 lg:grid-cols-8">
+              <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                 <StatCard label="Total equipment" value={data.equipment.length} icon="cube" />
                 <StatCard label="Pending Approvals" value={pendingApprovalsCount} icon="check" tone={pendingApprovalsCount > 0 ? "amber" : null} />
                 <StatCard label="Booked (Approved)" value={bookedCount} icon="scan" tone={bookedCount > 0 ? "purple" : null} />
@@ -327,18 +329,22 @@ export default function AdminDashboard() {
           )}
 
           {!loading && tab === "Vehicle Rentals" && (
-            <RentalsManagement
-              equipment={data.equipment}
-              bookings={data.bookings}
-              operators={data.operators}
-              telemetry={data.telemetry}
-              users={data.users}
-              onRefresh={load}
-            />
+            <Suspense fallback={<Loading label="Loading rentals…" />}>
+              <RentalsManagement
+                equipment={data.equipment}
+                bookings={data.bookings}
+                operators={data.operators}
+                telemetry={data.telemetry}
+                users={data.users}
+                onRefresh={load}
+              />
+            </Suspense>
           )}
 
           {!loading && tab === "Approvals" && (
-            <BookingApprovals onApproved={load} />
+            <Suspense fallback={<Loading label="Loading approvals…" />}>
+              <BookingApprovals onApproved={load} />
+            </Suspense>
           )}
 
           {!loading && tab === "Live Telemetry" && (
@@ -375,10 +381,16 @@ export default function AdminDashboard() {
           )}
 
           {tab === "Demand Forecasting" && (
-            <DemandForecast />
+            <Suspense fallback={<Loading label="Loading forecast…" />}>
+              <DemandForecast />
+            </Suspense>
           )}
 
-          {tab === "Rebalancing" && <Rebalance />}
+          {tab === "Rebalancing" && (
+            <Suspense fallback={<Loading label="Loading rebalancing…" />}>
+              <Rebalance />
+            </Suspense>
+          )}
 
           {!loading && tab === "Operators" && (
             <OperatorTable

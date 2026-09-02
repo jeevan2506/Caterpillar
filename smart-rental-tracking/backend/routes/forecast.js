@@ -203,18 +203,37 @@ router.get("/meta", async (req, res) => {
   }
 });
 
+// ── Caches ───────────────────────────────────────────────────────────────────
+// demand_history is a static, seeded dataset — it doesn't change during a demo
+// session, so caching the raw rows and the derived summary makes the forecast /
+// rebalance / chatbot-context endpoints return in ~1ms instead of ~1.7s.
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let _rowsCache = null;
+let _rowsCacheAt = 0;
+let _summaryCache = null;
+let _summaryCacheAt = 0;
+
+async function getAllHistory() {
+  if (_rowsCache && Date.now() - _rowsCacheAt < CACHE_TTL_MS) return _rowsCache;
+  _rowsCache = await DemandHistory.find().lean();
+  _rowsCacheAt = Date.now();
+  return _rowsCache;
+}
+
 // ── Build the full site+equipment forecast summary (reused by the chatbot) ────
 async function buildSummary() {
-  const combos = await DemandHistory.aggregate([
-    { $group: { _id: { site_id: "$site_id", equipment_type: "$equipment_type" } } },
-    { $sort: { "_id.site_id": 1, "_id.equipment_type": 1 } },
-  ]);
+  if (_summaryCache && Date.now() - _summaryCacheAt < CACHE_TTL_MS) return _summaryCache;
+
+  const all = await getAllHistory();
+  const groups = {};
+  for (const r of all) {
+    const key = `${r.site_id}|${r.equipment_type}`;
+    (groups[key] = groups[key] || []).push(r);
+  }
 
   const results = [];
-
-  for (const combo of combos) {
-    const { site_id, equipment_type } = combo._id;
-    const records = await DemandHistory.find({ site_id, equipment_type }).lean();
+  for (const [key, records] of Object.entries(groups)) {
+    const [site_id, equipment_type] = key.split("|");
     const { forecast, mae } = computeForecast(records);
     if (!forecast.length) continue;
 
@@ -244,7 +263,9 @@ async function buildSummary() {
     ? `${results[0].equipment_type}s will be in highest demand at Site ${results[0].site_id} in ${formatMonthLabel(results[0].peak_month)} (predicted ${results[0].predicted_units} units).`
     : "";
 
-  return { insight, summary: results };
+  _summaryCache = { insight, summary: results };
+  _summaryCacheAt = Date.now();
+  return _summaryCache;
 }
 
 // ── GET /api/forecast/summary ─────────────────────────────────────────────────
@@ -261,11 +282,14 @@ router.get("/summary", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const { site_id, equipment_type } = req.query;
-    const filter = {};
-    if (site_id)        filter.site_id        = site_id;
-    if (equipment_type) filter.equipment_type = equipment_type;
 
-    const records = await DemandHistory.find(filter).lean();
+    // Filter the cached rows in memory — the Demand Forecasting screen fires
+    // ~11 of these at once, so this avoids 11 round-trips to Atlas.
+    const records = (await getAllHistory()).filter(
+      (r) =>
+        (!site_id || r.site_id === site_id) &&
+        (!equipment_type || r.equipment_type === equipment_type)
+    );
     if (!records.length) {
       return res.json({ site_id, equipment_type, history: [], forecast: [] });
     }
