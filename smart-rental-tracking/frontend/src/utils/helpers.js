@@ -39,12 +39,11 @@ export function getAnomalies(eq, opts = {}) {
     });
   }
 
-  // Only active / on-rent equipment is evaluated for operational anomalies
-  if (eq.status !== "active" && eq.status !== "overdue") {
-    return flags;
-  }
+  // The spec asks us to "use the historical data to detect misuse" — so the
+  // usage/integrity checks below run on the stored engine/idle/operating-day
+  // figures (from past + current rentals), each guarded by its own data.
 
-  // 2. Unassigned — no site or no operator on record while active
+  // 2. Unassigned — no site or no operator on record
   if (eq.siteId === null || eq.lastOperatorId === null) {
     flags.push({
       type: "UNASSIGNED",
