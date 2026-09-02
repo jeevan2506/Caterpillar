@@ -9,10 +9,18 @@ const bookingSchema = new mongoose.Schema({
     enum: ["paid", "pending", "refunded"],
     default: "pending",
   },
+  approvalStatus: {
+    type: String,
+    enum: ["pending_approval", "approved", "rejected"],
+    default: "pending_approval",
+  },
+  approvedAt: { type: Date, default: null },
+  approvedBy: { type: String, default: null },
+  rejectionReason: { type: String, default: null },
   qrStatus: {
     type: String,
-    enum: ["unused", "checked-out", "completed", "expired"],
-    default: "unused",
+    enum: ["unapproved", "unused", "checked-out", "completed", "expired"],
+    default: "unapproved",
   },
   operatorRequest: {
     type: String,

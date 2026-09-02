@@ -19,6 +19,13 @@ router.post("/validate", async (req, res) => {
       return res.json({ success: false, message: "Payment not confirmed" });
     }
 
+    if (booking.approvalStatus !== "approved") {
+      return res.json({
+        success: false,
+        message: "Booking is pending admin approval. Please approve the booking first.",
+      });
+    }
+
     const equipment = await Equipment.findOne({ equipmentId: booking.equipmentId });
     let operator = null;
     if (booking.assignedOperatorId) {

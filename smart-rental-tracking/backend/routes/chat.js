@@ -17,6 +17,22 @@ const TELEMETRY_TIMEOUT = parseInt(process.env.TELEMETRY_TIMEOUT_SECONDS || "10"
 function getAnomalies(eq, maintenance = [], telemetry = null) {
   const flags = [];
 
+  const openMaint = maintenance.filter(
+    (m) => m.equipmentId === eq.equipmentId && m.status !== "resolved"
+  );
+  if (openMaint.length) {
+    flags.push({
+      type: "OPEN MAINTENANCE",
+      severity: "medium",
+      reason: `Unresolved: ${openMaint.map((m) => m.issueReported).join("; ")}`,
+    });
+  }
+
+  // Only active / on-rent machinery is evaluated for operational site/telemetry anomalies
+  if (eq.status !== "active" && eq.status !== "overdue") {
+    return flags;
+  }
+
   if (eq.siteId === null || eq.lastOperatorId === null) {
     flags.push({
       type: "UNASSIGNED",
@@ -59,17 +75,6 @@ function getAnomalies(eq, maintenance = [], telemetry = null) {
         reason: `Operating days ${eq.operatingDays} exceed rental window ${days} days`,
       });
     }
-  }
-
-  const openMaint = maintenance.filter(
-    (m) => m.equipmentId === eq.equipmentId && m.status !== "resolved"
-  );
-  if (openMaint.length) {
-    flags.push({
-      type: "OPEN MAINTENANCE",
-      severity: "medium",
-      reason: `Unresolved: ${openMaint.map((m) => m.issueReported).join("; ")}`,
-    });
   }
 
   if (telemetry && telemetry.fuelLevel != null && telemetry.fuelLevel < 15) {

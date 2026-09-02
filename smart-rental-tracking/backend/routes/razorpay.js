@@ -4,13 +4,20 @@ const Razorpay = require("razorpay");
 
 const router = express.Router();
 
-const keyId = process.env.RAZORPAY_KEY_ID;
-const keySecret = process.env.RAZORPAY_KEY_SECRET;
-const razorpay = keyId && keySecret ? new Razorpay({ key_id: keyId, key_secret: keySecret }) : null;
+function getRazorpay() {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) return null;
+  return {
+    instance: new Razorpay({ key_id: keyId, key_secret: keySecret }),
+    keySecret,
+  };
+}
 
 router.post("/create-order", async (req, res) => {
   try {
-    if (!razorpay) {
+    const rzp = getRazorpay();
+    if (!rzp) {
       return res.status(401).json({
         message: "Razorpay credentials are not configured on the backend.",
       });
@@ -25,7 +32,7 @@ router.post("/create-order", async (req, res) => {
       });
     }
 
-    const order = await razorpay.orders.create({
+    const order = await rzp.instance.orders.create({
       amount: Math.round(numericAmount),
       currency,
       receipt: String(receipt || `booking_${Date.now()}`),
@@ -37,11 +44,18 @@ router.post("/create-order", async (req, res) => {
       currency: order.currency,
     });
   } catch (err) {
-    const statusCode = err.statusCode || 500;
+    const statusCode = err.statusCode || err.status || (err.error && err.error.code === "BAD_REQUEST_ERROR" ? 400 : 500);
     const message = err.error?.description || err.message || "Failed to create Razorpay order.";
 
-    return res.status(statusCode === 401 ? 401 : 500).json({
-      message: statusCode === 401 ? "Razorpay authentication failed." : "Razorpay order creation failed.",
+    if (err.statusCode === 401 || err.status === 401) {
+      return res.status(401).json({
+        message: "Razorpay authentication failed.",
+        error: message,
+      });
+    }
+
+    return res.status(statusCode === 400 ? 400 : 500).json({
+      message: statusCode === 400 ? message : "Razorpay order creation failed.",
       error: message,
     });
   }
@@ -57,6 +71,14 @@ router.post("/verify-payment", (req, res) => {
       });
     }
 
+    const rzp = getRazorpay();
+    if (!rzp) {
+      return res.status(401).json({
+        message: "Razorpay credentials are not configured on the backend.",
+      });
+    }
+    const keySecret = rzp.keySecret;
+
     const generatedSignature = crypto
       .createHmac("sha256", keySecret)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -64,6 +86,7 @@ router.post("/verify-payment", (req, res) => {
 
     if (generatedSignature !== razorpay_signature) {
       return res.status(400).json({
+        success: false,
         message: "Payment signature mismatch.",
       });
     }

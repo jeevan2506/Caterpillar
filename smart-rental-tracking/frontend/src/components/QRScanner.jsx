@@ -52,29 +52,29 @@ export default function QRScanner({ onResult }) {
 
   return (
     <div>
-      <div className="relative mx-auto grid min-h-[220px] max-w-xs place-items-center overflow-hidden rounded-xl border border-stone-200 bg-stone-900">
+      <div className="relative mx-auto grid min-h-[200px] w-full max-w-sm place-items-center overflow-hidden rounded-xl border border-stone-200 bg-stone-900 aspect-video sm:aspect-square">
         <div id={regionId} className="w-full" />
         {!scanning && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center text-stone-500">
             <div className="text-center">
-              <Icon name="camera" className="mx-auto h-8 w-8" />
-              <p className="mt-1 text-xs">Camera preview</p>
+              <Icon name="camera" className="mx-auto h-8 w-8 text-stone-400" />
+              <p className="mt-1 text-xs text-stone-400">Camera preview</p>
             </div>
           </div>
         )}
       </div>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-xs text-red-600 text-center">{error}</p>}
 
       <div className="mt-3 text-center">
         {!scanning ? (
-          <button onClick={start} className="btn btn-primary btn-sm">
+          <button onClick={start} className="btn btn-primary btn-sm min-h-[38px] px-4 font-bold">
             <Icon name="camera" className="h-4 w-4" />
-            Start camera
+            <span>Start camera</span>
           </button>
         ) : (
-          <button onClick={stop} className="btn btn-ghost btn-sm">
-            Stop camera
+          <button onClick={stop} className="btn btn-ghost btn-sm min-h-[38px] px-4">
+            <span>Stop camera</span>
           </button>
         )}
       </div>

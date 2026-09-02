@@ -14,10 +14,19 @@ export const getEquipmentById = (id) => api.get(`/equipment/${id}`);
 // ---- Operators ----
 export const getOperators = (type) =>
   api.get("/operators", { params: type ? { type } : {} });
+export const createOperator = (data) => api.post("/operators", data);
 
 // ---- Bookings ----
 export const createBooking = (data) => api.post("/bookings", data);
 export const getUserBookings = (userId) => api.get(`/bookings/${userId}`);
+export const getPendingBookings = () => api.get("/bookings/pending/all");
+export const getAllBookings = () => api.get("/bookings/all");
+export const approveBooking = (bookingId, data) =>
+  api.post(`/bookings/${bookingId}/approve`, data);
+export const rejectBooking = (bookingId, data) =>
+  api.post(`/bookings/${bookingId}/reject`, data);
+export const getDynamicQr = (bookingId) =>
+  api.get(`/bookings/${bookingId}/dynamic-qr`);
 
 // ---- Razorpay ----
 export const createRazorpayOrder = (data) => api.post("/create-order", data);

@@ -43,9 +43,9 @@ export default function DemandInsights({ equipment, telemetry = [], maintenance 
   const siteRows = Object.entries(bySite).sort((a, b) => b[1].engine - a[1].engine);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Fleet usage summary */}
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <SummaryCard label="Total rented engine hours" value={totalEngine} unit="h" />
         <SummaryCard label="Total idle hours" value={totalIdle} unit="h" tone="amber" />
         <SummaryCard label="Total operating days" value={totalDays} unit="d" />
@@ -56,11 +56,11 @@ export default function DemandInsights({ equipment, telemetry = [], maintenance 
 
       {/* Usage by site */}
       <div className="card overflow-hidden">
-        <div className="border-b border-stone-100 px-5 py-3.5">
+        <div className="border-b border-stone-100 px-4 py-3 sm:px-5 sm:py-3.5">
           <h3 className="section-title">Usage by site</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] border-collapse">
+        <div className="table-container">
+          <table className="w-full min-w-[500px] border-collapse">
             <thead>
               <tr className="border-b border-stone-200">
                 <th className="th">Site</th>
@@ -86,15 +86,15 @@ export default function DemandInsights({ equipment, telemetry = [], maintenance 
       </div>
 
       {/* Fleet composition */}
-      <div className="card p-5">
+      <div className="card p-4 sm:p-5">
         <div className="mb-4 flex items-center gap-2">
           <Icon name="chart" className="h-4 w-4 text-stone-400" />
           <h3 className="section-title">Fleet composition by type</h3>
         </div>
-        <div className="space-y-3.5">
+        <div className="space-y-3 sm:space-y-3.5">
           {TYPES.map((t) => (
-            <div key={t} className="flex items-center gap-4">
-              <span className="w-24 shrink-0 text-sm font-medium text-stone-600">{t}</span>
+            <div key={t} className="flex items-center gap-3 sm:gap-4">
+              <span className="w-20 sm:w-24 shrink-0 text-xs sm:text-sm font-medium text-stone-600">{t}</span>
               <div className="h-7 flex-1 overflow-hidden rounded-lg bg-stone-100">
                 <div
                   className="flex h-full items-center justify-end rounded-lg bg-cat-yellow pr-2.5 text-xs font-bold text-cat-ink transition-all"
@@ -111,17 +111,17 @@ export default function DemandInsights({ equipment, telemetry = [], maintenance 
       {/* Avg operating days */}
       <div>
         <h3 className="section-title mb-3">Average operating days per rental</h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
           {TYPES.map((t) => (
-            <div key={t} className="card p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <div key={t} className="card p-3.5 sm:p-5">
+              <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-stone-400">
                 {t}
               </p>
-              <p className="mt-1 font-display text-3xl font-extrabold tracking-tight text-stone-900">
+              <p className="mt-1 font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900">
                 {avgDays[t]}
-                <span className="ml-1 text-sm font-semibold text-stone-400">days</span>
+                <span className="ml-1 text-xs sm:text-sm font-semibold text-stone-400">days</span>
               </p>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-100">
+              <div className="mt-2.5 sm:mt-3 h-1.5 overflow-hidden rounded-full bg-stone-100">
                 <div
                   className="h-full rounded-full bg-cat-ink"
                   style={{ width: `${(avgDays[t] / maxAvg) * 100}%` }}
@@ -137,17 +137,17 @@ export default function DemandInsights({ equipment, telemetry = [], maintenance 
 
 function SummaryCard({ label, value, unit, tone }) {
   return (
-    <div className="card p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+    <div className="card p-3 sm:p-4 flex flex-col justify-between">
+      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-stone-400 leading-tight">
         {label}
       </p>
       <p
-        className={`mt-1 font-display text-2xl font-extrabold tracking-tight ${
+        className={`mt-1 font-display text-xl sm:text-2xl font-extrabold tracking-tight ${
           tone === "amber" ? "text-amber-600" : "text-stone-900"
         }`}
       >
         {value}
-        <span className="ml-0.5 text-sm font-semibold text-stone-400">{unit}</span>
+        <span className="ml-0.5 text-xs sm:text-sm font-semibold text-stone-400">{unit}</span>
       </p>
     </div>
   );

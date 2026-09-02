@@ -130,18 +130,18 @@ export default function DemandForecast() {
   const shortages = summary.filter((s) => s.shortage > 0).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Insight banner */}
       {insight && (
-        <div className="flex items-center gap-4 rounded-2xl bg-cat-ink px-6 py-5 text-white">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-cat-yellow text-cat-ink">
+        <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 rounded-2xl bg-cat-ink p-4 sm:px-6 sm:py-5 text-white">
+          <span className="grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-xl bg-cat-yellow text-cat-ink">
             <Icon name="spark" className="h-5 w-5" />
           </span>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-cat-yellow">
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-cat-yellow">
               Top demand insight
             </p>
-            <p className="mt-0.5 font-display text-base font-bold leading-snug">
+            <p className="mt-0.5 font-display text-sm sm:text-base font-bold leading-snug">
               {insight}
             </p>
           </div>
@@ -149,7 +149,7 @@ export default function DemandForecast() {
       )}
 
       {/* Summary stat row */}
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-4">
         <MiniStat label="Site + type combos" value={summary.length} />
         <MiniStat label="Forecast horizon" value="6 mo" />
         <MiniStat label="Combos in shortage" value={shortages} tone="red" />
@@ -161,27 +161,27 @@ export default function DemandForecast() {
       </div>
 
       {/* Filters */}
-      <div className="card flex flex-wrap items-end gap-4 p-4">
-        <div>
+      <div className="card flex flex-wrap items-end gap-3 p-3.5 sm:p-4">
+        <div className="flex-1 sm:flex-none min-w-[130px]">
           <label className="label">Site</label>
           <select
             id="forecast-site-filter"
             value={selectedSite}
             onChange={(e) => setSelectedSite(e.target.value)}
-            className="input min-w-[140px]"
+            className="input w-full min-w-0 text-xs"
           >
             {meta.site_ids.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
         </div>
-        <div>
+        <div className="flex-1 sm:flex-none min-w-[150px]">
           <label className="label">Equipment type</label>
           <select
             id="forecast-equip-filter"
             value={selectedEquip}
             onChange={(e) => setSelectedEquip(e.target.value)}
-            className="input min-w-[160px]"
+            className="input w-full min-w-0 text-xs"
           >
             {meta.equipment_types.map((e) => (
               <option key={e} value={e}>{e}</option>
@@ -189,7 +189,7 @@ export default function DemandForecast() {
           </select>
         </div>
         {loading2 && (
-          <span className="pb-2.5 text-xs text-stone-400">Updating charts…</span>
+          <span className="pb-2 text-xs text-stone-400">Updating charts…</span>
         )}
       </div>
 
@@ -213,14 +213,14 @@ export default function DemandForecast() {
 
       {/* Full summary table */}
       <div className="card overflow-hidden">
-        <div className="border-b border-stone-100 px-5 py-3.5">
+        <div className="border-b border-stone-100 px-4 py-3 sm:px-5 sm:py-3.5">
           <h3 className="section-title">Full forecast summary</h3>
           <p className="text-xs text-stone-400">
             Every site + equipment combination, sorted by peak predicted demand
           </p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse">
+        <div className="table-container">
+          <table className="w-full min-w-[620px] border-collapse">
             <thead>
               <tr className="border-b border-stone-200">
                 <th className="th">Equipment</th>
@@ -279,12 +279,12 @@ export default function DemandForecast() {
 
 function MiniStat({ label, value, tone, hint }) {
   return (
-    <div className="card p-4" title={hint || undefined}>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+    <div className="card p-3 sm:p-4 flex flex-col justify-between" title={hint || undefined}>
+      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-stone-400 leading-tight">
         {label}
       </p>
       <p
-        className={`mt-1 font-display text-xl font-extrabold tracking-tight ${
+        className={`mt-1 font-display text-lg sm:text-xl font-extrabold tracking-tight ${
           tone === "red" && value > 0 ? "text-red-600" : "text-stone-900"
         }`}
       >
@@ -306,18 +306,18 @@ function ForecastChart({ icon, title, subtitle, data, keys }) {
   });
 
   return (
-    <div className="card p-5">
+    <div className="card p-4 sm:p-5">
       <div className="mb-4 flex items-center gap-2">
-        <Icon name={icon} className="h-4 w-4 text-stone-400" />
+        <Icon name={icon} className="h-4 w-4 text-stone-400 shrink-0" />
         <div>
-          <h3 className="section-title">{title}</h3>
+          <h3 className="section-title text-sm sm:text-base">{title}</h3>
           <p className="text-xs text-stone-400">{subtitle}</p>
         </div>
       </div>
       {data.length ? (
-        <div className="overflow-x-auto">
-          <ResponsiveContainer width="100%" height={300} minWidth={480}>
-            <BarChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
+        <div className="table-container">
+          <ResponsiveContainer width="100%" height={280} minWidth={360}>
+            <BarChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0efec" vertical={false} />
               <XAxis
                 dataKey="month"

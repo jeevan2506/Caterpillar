@@ -6,22 +6,24 @@ const Maintenance = require("../models/Maintenance");
 const Booking = require("../models/Booking");
 const Operator = require("../models/Operator");
 const EquipmentTelemetry = require("../models/EquipmentTelemetry");
+const User = require("../models/User");
 const { buildSummary: buildForecastSummary } = require("./forecast");
 
 const getTimeoutSeconds = () =>
   parseInt(process.env.TELEMETRY_TIMEOUT_SECONDS || "10", 10);
 
 // GET /api/chatbot-context
-// Combined snapshot consumed by the n8n chatbot workflow.
+// Combined snapshot consumed by admin console and n8n chatbot workflow.
 router.get("/chatbot-context", async (req, res) => {
   try {
-    const [equipment, maintenance, bookings, operators, rawTelemetry] =
+    const [equipment, maintenance, bookings, operators, rawTelemetry, users] =
       await Promise.all([
         Equipment.find(),
         Maintenance.find(),
-        Booking.find(),
+        Booking.find().sort({ createdAt: -1 }),
         Operator.find(),
         EquipmentTelemetry.find(),
+        User.find({}, "userId username name phone role"),
       ]);
 
     const timeoutSec = getTimeoutSeconds();
@@ -46,7 +48,7 @@ router.get("/chatbot-context", async (req, res) => {
       console.warn("forecast unavailable for chatbot-context:", e.message);
     }
 
-    res.json({ equipment, maintenance, bookings, operators, telemetry, demandForecast });
+    res.json({ equipment, maintenance, bookings, operators, telemetry, demandForecast, users });
   } catch (err) {
     res.status(500).json({ message: "Failed to build chatbot context", error: err.message });
   }

@@ -98,7 +98,7 @@ export default function AdminScanner({ onChange }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       {/* Scan input */}
-      <div className="card h-fit p-5">
+      <div className="card h-fit p-4 sm:p-5">
         <div className="mb-3 flex items-center gap-2">
           <Icon name="scan" className="h-4 w-4 text-stone-400" />
           <h3 className="section-title">Scan a booking</h3>
@@ -119,12 +119,12 @@ export default function AdminScanner({ onChange }) {
             onChange={(e) => setBookingId(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && runValidate()}
             placeholder="BOOK-…"
-            className="input"
+            className="input min-w-0 flex-1"
           />
           <button
             onClick={() => runValidate()}
             disabled={loading}
-            className="btn btn-dark shrink-0"
+            className="btn btn-dark shrink-0 px-4 min-h-[42px]"
           >
             {loading ? <Spinner className="h-4 w-4" /> : "Validate"}
           </button>
@@ -137,12 +137,12 @@ export default function AdminScanner({ onChange }) {
         {success && <Alert tone="success">{success}</Alert>}
 
         {!result && !error && !success && (
-          <div className="card grid place-items-center px-6 py-16 text-center">
+          <div className="card grid place-items-center px-4 py-12 sm:px-6 sm:py-16 text-center">
             <div className="mb-3 grid h-12 w-12 place-items-center rounded-full bg-stone-100 text-stone-400">
               <Icon name="scan" className="h-6 w-6" />
             </div>
             <p className="font-semibold text-stone-700">Awaiting a scan</p>
-            <p className="mt-1 text-sm text-stone-400">
+            <p className="mt-1 text-xs sm:text-sm text-stone-400 max-w-xs">
               Scan a customer's QR or type the booking ID to validate it.
             </p>
           </div>
@@ -150,9 +150,9 @@ export default function AdminScanner({ onChange }) {
 
         {result && (
           <div className="card animate-fade-up overflow-hidden">
-            <div className="flex items-center justify-between border-b border-stone-100 bg-stone-50 px-5 py-3.5">
-              <div className="flex items-center gap-2">
-                <span className="font-display text-sm font-bold text-stone-900">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 bg-stone-50 px-4 py-3 sm:px-5 sm:py-3.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-display text-sm font-bold text-stone-900 break-all">
                   {result.booking.bookingId}
                 </span>
                 <Badge status={result.booking.qrStatus} />
@@ -168,7 +168,7 @@ export default function AdminScanner({ onChange }) {
               </span>
             </div>
 
-            <div className="grid gap-5 p-5 sm:grid-cols-3">
+            <div className="grid gap-4 p-4 sm:p-5 grid-cols-1 xs:grid-cols-2 sm:grid-cols-3">
               <Field label="Customer" value={result.booking.userId} />
               <Field label="Payment" value={<Badge status={result.booking.paymentStatus} />} />
               <Field
@@ -215,7 +215,7 @@ export default function AdminScanner({ onChange }) {
               )}
             </div>
 
-            <div className="border-t border-stone-100 bg-stone-50/60 p-5">
+            <div className="border-t border-stone-100 bg-stone-50/60 p-4 sm:p-5">
               {result.action === "confirm-pickup" && (
                 <div className="space-y-3">
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -266,7 +266,7 @@ export default function AdminScanner({ onChange }) {
                   <button
                     onClick={doPickup}
                     disabled={loading}
-                    className="btn btn-primary w-full py-3"
+                    className="btn btn-primary w-full py-3 min-h-[44px] font-bold"
                   >
                     {loading ? <Spinner className="h-4 w-4" /> : "Confirm pickup"}
                   </button>
@@ -277,7 +277,7 @@ export default function AdminScanner({ onChange }) {
                 <button
                   onClick={doReturn}
                   disabled={loading}
-                  className="btn btn-primary w-full py-3"
+                  className="btn btn-primary w-full py-3 min-h-[44px] font-bold"
                 >
                   {loading ? <Spinner className="h-4 w-4" /> : "Confirm return"}
                 </button>

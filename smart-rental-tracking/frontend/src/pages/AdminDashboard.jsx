@@ -10,14 +10,18 @@ import Rebalance from "../components/Rebalance.jsx";
 import OperatorTable from "../components/OperatorTable.jsx";
 import ChatWidget from "../components/ChatWidget.jsx";
 import LiveTelemetryMonitor from "../components/LiveTelemetryMonitor.jsx";
-import Icon from "../components/Icon.jsx";
+import BookingApprovals from "../components/BookingApprovals.jsx";
+import RentalsManagement from "../components/RentalsManagement.jsx";
+import Icon from "./../components/Icon.jsx";
 import { Loading, Alert } from "../components/ui.jsx";
 import { getContext } from "../services/api.js";
 import { getSession } from "../services/auth.js";
-import { displayStatus, getAnomalies } from "../utils/helpers.js";
+import { displayStatus, getAnomalies, fmtDate } from "../utils/helpers.js";
 
 const NAV = [
   { label: "Dashboard", icon: "grid" },
+  { label: "Vehicle Rentals", icon: "cube" },
+  { label: "Approvals", icon: "check" },
   { label: "Live Telemetry", icon: "activity" },
   { label: "QR Scanner", icon: "scan" },
   { label: "Equipment", icon: "cube" },
@@ -39,6 +43,7 @@ export default function AdminDashboard() {
     operators: [],
     maintenance: [],
     telemetry: [],
+    users: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -75,11 +80,26 @@ export default function AdminDashboard() {
       }).length,
     0
   );
+  const pendingApprovalsCount = (data.bookings || []).filter(
+    (b) =>
+      b.approvalStatus === "pending_approval" &&
+      b.qrStatus !== "completed" &&
+      b.qrStatus !== "checked-out"
+  ).length;
+  const bookedCount = data.equipment.filter((eq) => displayStatus(eq) === "booked").length;
   const activeCount = data.equipment.filter((eq) => displayStatus(eq) === "active").length;
   const overdueCount = data.equipment.filter((eq) => displayStatus(eq) === "overdue").length;
   const dueSoonCount = data.equipment.filter((eq) => displayStatus(eq) === "due-soon").length;
+  const activeRentalsCount = (data.bookings || []).filter(
+    (b) => b.qrStatus === "checked-out"
+  ).length;
+  const activeEqIds = new Set(
+    data.equipment
+      .filter((eq) => eq.status === "active" || eq.status === "overdue")
+      .map((eq) => eq.equipmentId)
+  );
   const offlineCount = (data.telemetry || []).filter(
-    (t) => t.connectionStatus === "offline"
+    (t) => activeEqIds.has(t.equipmentId) && t.connectionStatus === "offline"
   ).length;
   const pendingMaint = data.maintenance.filter((m) => m.status !== "resolved").length;
   const availableOps = data.operators.filter((o) => o.availabilityStatus === "available").length;
@@ -100,18 +120,34 @@ export default function AdminDashboard() {
       />
 
       <div className="mx-auto flex max-w-7xl">
-        {/* Sidebar */}
+        {/* Sidebar Backdrop & Drawer on Mobile */}
         {menuOpen && (
           <div
-            className="fixed inset-0 z-10 bg-black/30 md:hidden"
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden transition-opacity"
             onClick={() => setMenuOpen(false)}
           />
         )}
         <aside
           className={`${
-            menuOpen ? "translate-x-0" : "-translate-x-full"
-          } fixed left-0 top-16 z-10 h-[calc(100vh-4rem)] w-64 shrink-0 border-r border-stone-200 bg-white p-3 transition-transform md:sticky md:translate-x-0`}
+            menuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+          } fixed left-0 top-0 z-50 h-full w-72 max-w-[85vw] border-r border-stone-200 bg-white p-4 transition-transform duration-200 ease-in-out md:static md:top-16 md:z-10 md:h-[calc(100vh-4rem)] md:w-64 md:translate-x-0 md:border-r md:p-3 md:shadow-none overflow-y-auto`}
         >
+          <div className="flex items-center justify-between pb-3 md:hidden border-b border-stone-100 mb-2">
+            <div className="flex items-center gap-2">
+              <div className="grid h-8 w-8 place-items-center rounded-lg bg-cat-ink font-display text-xs font-extrabold text-cat-yellow">
+                CAT
+              </div>
+              <span className="font-display text-sm font-bold text-stone-900">Admin Console</span>
+            </div>
+            <button
+              onClick={() => setMenuOpen(false)}
+              className="grid h-9 w-9 place-items-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+              aria-label="Close menu"
+            >
+              <Icon name="close" className="h-5 w-5" />
+            </button>
+          </div>
+
           <p className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
             Navigation
           </p>
@@ -122,24 +158,34 @@ export default function AdminDashboard() {
                 <button
                   key={n.label}
                   onClick={() => pick(n.label)}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition min-h-[44px] ${
                     on
-                      ? "bg-cat-ink text-white"
-                      : "text-stone-600 hover:bg-stone-100"
+                      ? "bg-cat-ink text-white shadow-sm"
+                      : "text-stone-600 hover:bg-stone-100 active:bg-stone-200"
                   }`}
                 >
                   <Icon
                     name={n.icon}
-                    className={`h-[18px] w-[18px] ${on ? "text-cat-yellow" : ""}`}
+                    className={`h-[18px] w-[18px] shrink-0 ${on ? "text-cat-yellow" : "text-stone-500"}`}
                   />
-                  {n.label}
+                  <span className="truncate">{n.label}</span>
+                  {n.label === "Vehicle Rentals" && activeRentalsCount > 0 && (
+                    <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800 shrink-0">
+                      {activeRentalsCount} active
+                    </span>
+                  )}
+                  {n.label === "Approvals" && pendingApprovalsCount > 0 && (
+                    <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 shrink-0">
+                      {pendingApprovalsCount}
+                    </span>
+                  )}
                   {n.label === "Anomalies" && anomalyCount > 0 && (
-                    <span className="ml-auto rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700">
+                    <span className="ml-auto rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700 shrink-0">
                       {anomalyCount}
                     </span>
                   )}
                   {n.label === "Maintenance" && pendingMaint > 0 && (
-                    <span className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                    <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 shrink-0">
                       {pendingMaint}
                     </span>
                   )}
@@ -149,15 +195,15 @@ export default function AdminDashboard() {
           </nav>
         </aside>
 
-        {/* Main */}
-        <main className="min-w-0 flex-1 space-y-6 p-4 sm:p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-xl font-extrabold tracking-tight text-stone-900">
+        {/* Main Content Area */}
+        <main className="min-w-0 flex-1 space-y-5 p-3.5 sm:p-6 overflow-x-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-stone-900">
               {tab}
             </h2>
-            <button onClick={load} className="btn btn-ghost btn-sm">
-              <Icon name="spark" className="h-4 w-4" />
-              Refresh
+            <button onClick={load} className="btn btn-ghost btn-sm text-xs flex items-center gap-1.5">
+              <Icon name="spark" className="h-3.5 w-3.5 text-amber-600" />
+              <span>Refresh</span>
             </button>
           </div>
 
@@ -165,17 +211,96 @@ export default function AdminDashboard() {
           {loading && <Loading label="Loading console…" />}
 
           {!loading && tab === "Dashboard" && (
-            <div className="space-y-6">
-              <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="space-y-5 sm:space-y-6">
+              <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-4 lg:grid-cols-8">
                 <StatCard label="Total equipment" value={data.equipment.length} icon="cube" />
-                <StatCard label="Active rentals" value={activeCount} icon="scan" />
+                <StatCard label="Pending Approvals" value={pendingApprovalsCount} icon="check" tone={pendingApprovalsCount > 0 ? "amber" : null} />
+                <StatCard label="Booked (Approved)" value={bookedCount} icon="scan" tone={bookedCount > 0 ? "purple" : null} />
+                <StatCard label="Active rentals" value={activeCount} icon="scan" tone={activeCount > 0 ? "blue" : null} />
                 <StatCard label="Due soon" value={dueSoonCount} icon="alert" tone="amber" />
                 <StatCard label="Overdue" value={overdueCount} icon="alert" tone="red" />
                 <StatCard label="Machines offline" value={offlineCount} icon="activity" tone="red" />
                 <StatCard label="Open anomalies" value={anomalyCount} icon="alert" tone="red" />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              {/* Quick Rentals & Vehicle Status Summary */}
+              <div className="card p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-3 mb-4">
+                  <div>
+                    <h3 className="section-title text-sm sm:text-base font-bold text-stone-900">
+                      Vehicle Rentals & Fleet Check-Out / Check-In Status
+                    </h3>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      Live status of active checkouts, fleet in yard, and rental records.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setTab("Vehicle Rentals")}
+                    className="btn btn-dark btn-sm text-xs font-bold px-3 py-1.5 flex items-center gap-1"
+                  >
+                    <span>View All Vehicle Rentals & History</span>
+                    <span>→</span>
+                  </button>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div
+                    onClick={() => setTab("Vehicle Rentals")}
+                    className="cursor-pointer rounded-xl border border-blue-200 bg-blue-50/40 p-4 transition hover:shadow-md hover:border-blue-300"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-blue-800">
+                        Checked-Out (On Site)
+                      </span>
+                      <span className="h-2 w-2 rounded-full bg-blue-600 animate-ping" />
+                    </div>
+                    <p className="font-display text-3xl font-black text-blue-950 mt-2">
+                      {activeRentalsCount}
+                    </p>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Vehicles currently dispatched to client worksites.
+                    </p>
+                  </div>
+
+                  <div
+                    onClick={() => setTab("Vehicle Rentals")}
+                    className="cursor-pointer rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 transition hover:shadow-md hover:border-emerald-300"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                        Checked-In (Fleet Yard)
+                      </span>
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    </div>
+                    <p className="font-display text-3xl font-black text-emerald-950 mt-2">
+                      {data.equipment.filter((eq) => eq.status === "available").length}
+                    </p>
+                    <p className="text-xs text-emerald-700 mt-1">
+                      Available machines returned to depot, ready for rent.
+                    </p>
+                  </div>
+
+                  <div
+                    onClick={() => setTab("Vehicle Rentals")}
+                    className="cursor-pointer rounded-xl border border-stone-200 bg-stone-50 p-4 transition hover:shadow-md hover:border-stone-300"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-stone-600">
+                        Previously Rented
+                      </span>
+                      <span className="h-2 w-2 rounded-full bg-stone-400" />
+                    </div>
+                    <p className="font-display text-3xl font-black text-stone-900 mt-2">
+                      {(data.bookings || []).filter((b) => b.qrStatus === "completed").length}
+                    </p>
+                    <p className="text-xs text-stone-500 mt-1">
+                      Total completed historical rental logs on file.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                 <MiniPanel
                   title="Maintenance"
                   primary={`${pendingMaint} open`}
@@ -189,7 +314,8 @@ export default function AdminDashboard() {
                   icon="users"
                 />
               </div>
-              <div className="card p-5">
+
+              <div className="card p-4 sm:p-5">
                 <AnomalyPanel
                   equipment={data.equipment}
                   telemetry={data.telemetry}
@@ -198,6 +324,20 @@ export default function AdminDashboard() {
                 />
               </div>
             </div>
+          )}
+
+          {!loading && tab === "Vehicle Rentals" && (
+            <RentalsManagement
+              equipment={data.equipment}
+              bookings={data.bookings}
+              operators={data.operators}
+              telemetry={data.telemetry}
+              users={data.users}
+            />
+          )}
+
+          {!loading && tab === "Approvals" && (
+            <BookingApprovals onApproved={load} />
           )}
 
           {!loading && tab === "Live Telemetry" && (
@@ -259,27 +399,30 @@ function StatCard({ label, value, icon, tone }) {
   const active = tone && value > 0;
   const red = tone === "red" && active;
   const amber = tone === "amber" && active;
+  const purple = tone === "purple" && active;
   return (
-    <div className="card p-4">
-      <div className="flex items-start justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+    <div className="card p-3 sm:p-4 flex flex-col justify-between">
+      <div className="flex items-start justify-between gap-1">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-stone-400 leading-tight">
           {label}
         </p>
         <span
-          className={`grid h-8 w-8 place-items-center rounded-lg ${
+          className={`grid h-7 w-7 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-lg ${
             red
               ? "bg-red-50 text-red-500"
               : amber
               ? "bg-amber-50 text-amber-500"
+              : purple
+              ? "bg-purple-50 text-purple-600"
               : "bg-stone-100 text-stone-400"
           }`}
         >
-          <Icon name={icon} className="h-4 w-4" />
+          <Icon name={icon} className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </span>
       </div>
       <p
-        className={`mt-2 font-display text-3xl font-extrabold tracking-tight ${
-          red ? "text-red-600" : amber ? "text-amber-600" : "text-stone-900"
+        className={`mt-2 font-display text-2xl sm:text-3xl font-extrabold tracking-tight ${
+          red ? "text-red-600" : amber ? "text-amber-600" : purple ? "text-purple-700" : "text-stone-900"
         }`}
       >
         {value}

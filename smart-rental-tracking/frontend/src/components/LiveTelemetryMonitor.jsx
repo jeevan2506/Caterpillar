@@ -8,12 +8,21 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
   const [now, setNow] = useState(Date.now());
   const [autoPoll] = useState(true);
   const pollIntervalRef = useRef(null);
-  const reqSeqRef = useRef(0);
-
-  // Default fallback list of equipment IDs if none passed
-  const availableEqIds = equipment.length > 0
-    ? equipment.map((e) => e.equipmentId)
+  // Display equipped / active machinery on rent, or fall back to available fleet
+  const equippedList = equipment.filter(
+    (e) => e.status === "active" || e.status === "overdue"
+  );
+  const displayList = equippedList.length > 0 ? equippedList : equipment;
+  const equippedEqIds = displayList.length > 0
+    ? displayList.map((e) => e.equipmentId)
     : ["EQX1001", "EQX1002", "EQX1003", "EQX1004", "EQX1005", "EQX1006", "EQX1007"];
+
+  // Keep selectedId in sync with equipped machines
+  useEffect(() => {
+    if (equippedEqIds.length > 0 && (!selectedId || !equippedEqIds.includes(selectedId))) {
+      setSelectedId(equippedEqIds[0]);
+    }
+  }, [equippedEqIds, selectedId]);
 
   // Fetch telemetry for all machines. Responses can arrive out of order, so
   // tag each request and ignore any that isn't the latest — otherwise a slow
@@ -60,6 +69,46 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
     };
   }, [autoPoll]);
 
+  if (equippedList.length === 0) {
+    return (
+      <div className="card overflow-hidden border-stone-200/90 shadow-sm">
+        <div className="flex items-center gap-2.5 border-b border-stone-100 bg-stone-50/80 px-5 py-3.5">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-cat-yellow/20 text-cat-ink">
+            <Icon name="activity" className="h-4 w-4" />
+          </span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-display text-sm font-bold tracking-tight text-stone-900">
+                LIVE EQUIPMENT TELEMETRY MONITOR
+              </h3>
+              <span className="flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                Standby Mode
+              </span>
+            </div>
+            <p className="text-xs text-stone-400">
+              Real-time machine IoT health, connection state, and telematics metrics.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid place-items-center px-6 py-16 text-center">
+          <div className="mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-500/20">
+            <Icon name="cube" className="h-7 w-7" />
+          </div>
+          <h4 className="font-display text-base font-bold text-stone-800">
+            No Active / Equipped Vehicles on Rent
+          </h4>
+          <p className="mt-1.5 max-w-md text-xs text-stone-500">
+            Telemetry is only monitored for equipment actively checked out to job sites. Unrented units resting in the inventory depot do not transmit telemetric data.
+          </p>
+          <div className="mt-4 rounded-xl bg-stone-50 px-4 py-2 text-xs text-stone-600 border border-stone-200">
+            💡 <span className="font-semibold">Tip:</span> Confirm a pickup in <span className="font-bold text-stone-800">QR Scanner</span> to deploy a vehicle and initiate live IoT monitoring.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const activeTelemetry = telemetryMap[selectedId];
   const selectedEquipmentInfo = equipment.find((e) => e.equipmentId === selectedId);
 
@@ -95,14 +144,14 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
   return (
     <div className="card overflow-hidden border-stone-200/90 shadow-sm">
       {/* Header bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 bg-stone-50/80 px-5 py-3.5">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-cat-yellow/20 text-cat-ink">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 bg-stone-50/80 px-4 py-3 sm:px-5 sm:py-3.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cat-yellow/20 text-cat-ink">
             <Icon name="activity" className="h-4 w-4" />
           </span>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-display text-sm font-bold tracking-tight text-stone-900">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-display text-xs sm:text-sm font-bold tracking-tight text-stone-900">
                 LIVE EQUIPMENT TELEMETRY MONITOR
               </h3>
               <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
@@ -110,15 +159,15 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
                 Live 3s Polling
               </span>
             </div>
-            <p className="text-xs text-stone-400">
+            <p className="text-[11px] sm:text-xs text-stone-400 truncate">
               Real-time machine IoT health, connection state, and telematics metrics.
             </p>
           </div>
         </div>
 
-        {/* Equipment Selector Buttons */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {availableEqIds.map((id) => {
+        {/* Equipment Selector Horizontal Swipeable Bar */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+          {equippedEqIds.map((id) => {
             const eqTelem = telemetryMap[id];
             const eqLastSeen = eqTelem?.lastSeen ? new Date(eqTelem.lastSeen) : null;
             const eqSecAgo = eqLastSeen ? Math.floor((now - eqLastSeen.getTime()) / 1000) : null;
@@ -128,7 +177,7 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
               <button
                 key={id}
                 onClick={() => setSelectedId(id)}
-                className={`relative flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                className={`relative flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold shrink-0 transition min-h-[32px] ${
                   selectedId === id
                     ? "bg-cat-ink text-white shadow-sm"
                     : "bg-white text-stone-600 ring-1 ring-inset ring-stone-200 hover:bg-stone-50"
@@ -147,39 +196,39 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
       </div>
 
       {/* Main Telemetry Panel */}
-      <div className="p-5">
-        <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+      <div className="p-3.5 sm:p-5">
+        <div className="grid gap-5 sm:gap-6 lg:grid-cols-[1.3fr_1fr]">
           {/* Main Selected Equipment Card */}
           <div
-            className={`relative rounded-2xl border p-5 transition-all ${
+            className={`relative rounded-2xl border p-4 sm:p-5 transition-all ${
               isOnline
                 ? "border-emerald-200/80 bg-gradient-to-br from-emerald-50/30 via-white to-stone-50/50 shadow-sm"
                 : "border-red-200/80 bg-gradient-to-br from-red-50/20 via-white to-stone-50/50 shadow-sm"
             }`}
           >
             {/* Header / Equipment Identity & Online Status */}
-            <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-stone-100">
+            <div className="flex flex-wrap items-start justify-between gap-3 pb-3.5 sm:pb-4 border-b border-stone-100">
               <div className="flex items-center gap-3">
                 <div
-                  className={`grid h-12 w-12 place-items-center rounded-xl font-bold ${
+                  className={`grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-xl font-bold shrink-0 ${
                     isOnline
                       ? "bg-emerald-100 text-emerald-800"
                       : "bg-stone-100 text-stone-600"
                   }`}
                 >
-                  <Icon name="cube" className="h-6 w-6" />
+                  <Icon name="cube" className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="font-display text-xl font-extrabold tracking-tight text-stone-900">
+                    <h4 className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-stone-900">
                       {selectedId}
                     </h4>
                     <span className="text-stone-400 font-medium">—</span>
-                    <span className="text-sm font-semibold text-stone-700">
+                    <span className="text-xs sm:text-sm font-semibold text-stone-700">
                       {equipmentType}
                     </span>
                   </div>
-                  <p className="text-xs text-stone-500 flex items-center gap-1.5 mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-stone-500 flex items-center gap-1.5 mt-0.5">
                     <span className="font-semibold text-stone-400 uppercase tracking-wider text-[10px]">Site:</span>
                     <span className="font-semibold text-stone-800 bg-stone-100 px-1.5 py-0.5 rounded">
                       {siteId}
@@ -189,19 +238,19 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
               </div>
 
               {/* Status Pill */}
-              <div className="flex flex-col items-end gap-1">
+              <div className="flex flex-col items-start sm:items-end gap-1">
                 {isOnline ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-sm ring-2 ring-emerald-300">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white shadow-sm ring-2 ring-emerald-300">
                     <span className="h-2 w-2 animate-ping rounded-full bg-white" />
                     🟢 ONLINE
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-sm ring-2 ring-red-300">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white shadow-sm ring-2 ring-red-300">
                     <span className="h-2 w-2 rounded-full bg-white/80" />
                     🔴 OFFLINE
                   </span>
                 )}
-                <span className="text-[11px] font-medium text-stone-400">
+                <span className="text-[10px] sm:text-[11px] font-medium text-stone-400">
                   {secondsAgo !== null
                     ? `Last heartbeat: ${secondsAgo}s ago`
                     : "No heartbeat received"}
@@ -379,7 +428,7 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
 
               {/* Fleet List */}
               <div className="mt-4 space-y-2">
-                {availableEqIds.map((id) => {
+                {equippedEqIds.map((id) => {
                   const eqData = equipment.find((e) => e.equipmentId === id);
                   const telem = telemetryMap[id];
                   const telemLastSeen = telem?.lastSeen ? new Date(telem.lastSeen) : null;

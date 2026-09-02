@@ -51,16 +51,16 @@ export default function Login() {
         />
       </div>
 
-      <div className="relative mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-4 py-12">
+      <div className="relative mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-3.5 py-8 sm:px-6 sm:py-12">
         {/* Header */}
-        <div className="mb-9 text-center animate-fade-up">
-          <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-cat-yellow font-display text-lg font-extrabold text-cat-ink shadow-glow">
+        <div className="mb-6 sm:mb-9 text-center animate-fade-up">
+          <div className="mx-auto mb-4 sm:mb-5 grid h-12 w-12 sm:h-14 sm:w-14 place-items-center rounded-2xl bg-cat-yellow font-display text-base sm:text-lg font-extrabold text-cat-ink shadow-glow">
             CAT
           </div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
+          <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
             Smart Rental Tracking
           </h1>
-          <p className="mx-auto mt-3 max-w-md text-sm text-stone-400">
+          <p className="mx-auto mt-2 sm:mt-3 max-w-md text-xs sm:text-sm text-stone-400 px-2">
             Equipment rental management for construction &amp; mining fleets —
             witnessed pickups, returns and utilisation insights.
           </p>
@@ -69,15 +69,15 @@ export default function Login() {
         {/* Login Card */}
         <form
           onSubmit={handleLogin}
-          className="w-full max-w-md animate-fade-up rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
+          className="w-full max-w-md animate-fade-up rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6 backdrop-blur-sm shadow-2xl"
         >
-          <h2 className="mb-5 font-display text-base font-bold tracking-tight text-white">
+          <h2 className="mb-4 sm:mb-5 font-display text-sm sm:text-base font-bold tracking-tight text-white">
             Sign in to your account
           </h2>
 
           {/* Username */}
           <div className="mb-4">
-            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <label className="mb-1.5 block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-stone-400">
               Username
             </label>
             <div className="relative">
@@ -91,14 +91,14 @@ export default function Login() {
                 placeholder="e.g. joy, tom, jerry"
                 autoComplete="username"
                 autoFocus
-                className="w-full rounded-xl border border-white/15 bg-white/5 pl-10 pr-3.5 py-2.5 text-sm text-white placeholder:text-stone-500 outline-none transition focus:border-cat-yellow focus:ring-4 focus:ring-cat-yellow/10"
+                className="w-full rounded-xl border border-white/15 bg-white/5 pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-white placeholder:text-stone-500 outline-none transition focus:border-cat-yellow focus:ring-4 focus:ring-cat-yellow/10 min-h-[42px]"
               />
             </div>
           </div>
 
           {/* Password */}
           <div className="mb-5">
-            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <label className="mb-1.5 block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-stone-400">
               Password
             </label>
             <div className="relative">
@@ -113,12 +113,12 @@ export default function Login() {
                 onKeyDown={(e) => e.key === "Enter" && handleLogin(e)}
                 placeholder="Enter your password"
                 autoComplete="current-password"
-                className="w-full rounded-xl border border-white/15 bg-white/5 pl-10 pr-14 py-2.5 text-sm text-white placeholder:text-stone-500 outline-none transition focus:border-cat-yellow focus:ring-4 focus:ring-cat-yellow/10"
+                className="w-full rounded-xl border border-white/15 bg-white/5 pl-10 pr-14 py-2.5 text-xs sm:text-sm text-white placeholder:text-stone-500 outline-none transition focus:border-cat-yellow focus:ring-4 focus:ring-cat-yellow/10 min-h-[42px]"
               />
               <button
                 type="button"
                 onClick={() => setShowPass((s) => !s)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold uppercase tracking-wider text-stone-400 hover:text-cat-yellow transition"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-stone-400 hover:text-cat-yellow transition p-1"
               >
                 {showPass ? "Hide" : "Show"}
               </button>
@@ -127,9 +127,9 @@ export default function Login() {
 
           {/* Error */}
           {error && (
-            <div className="mb-4 flex items-center gap-2.5 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400 ring-1 ring-inset ring-red-500/20">
+            <div className="mb-4 flex items-center gap-2.5 rounded-xl bg-red-500/10 px-3.5 py-2.5 text-xs sm:text-sm text-red-400 ring-1 ring-inset ring-red-500/20">
               <Icon name="alert" className="h-4 w-4 shrink-0" />
-              {error}
+              <span>{error}</span>
             </div>
           )}
 
@@ -138,7 +138,7 @@ export default function Login() {
             id="login-submit"
             type="submit"
             disabled={loading}
-            className="btn btn-primary w-full py-3 text-sm"
+            className="btn btn-primary w-full py-3 text-xs sm:text-sm font-bold min-h-[44px]"
           >
             {loading ? (
               <>
@@ -150,22 +150,22 @@ export default function Login() {
           </button>
 
           {/* Role hint */}
-          <div className="mt-5 rounded-xl border border-white/5 bg-white/[0.03] p-3.5">
+          <div className="mt-4 sm:mt-5 rounded-xl border border-white/5 bg-white/[0.03] p-3 sm:p-3.5">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-stone-500">
               Demo credentials
             </p>
             <div className="space-y-1.5 text-xs text-stone-400">
-              <div className="flex justify-between">
+              <div className="flex items-center justify-between">
                 <span><span className="font-medium text-stone-300">joy</span> / tom123$</span>
                 <span className="rounded-md bg-stone-800 px-1.5 py-0.5 text-[10px] text-stone-400">User</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex items-center justify-between">
                 <span><span className="font-medium text-stone-300">tom</span> / tom123$</span>
                 <span className="rounded-md bg-stone-800 px-1.5 py-0.5 text-[10px] text-stone-400">User</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex items-center justify-between">
                 <span><span className="font-medium text-stone-300">jerry</span> / jerry123$</span>
-                <span className="rounded-md bg-cat-yellow/20 px-1.5 py-0.5 text-[10px] text-cat-yellow">Admin</span>
+                <span className="rounded-md bg-cat-yellow/20 px-1.5 py-0.5 text-[10px] text-cat-yellow font-semibold">Admin</span>
               </div>
             </div>
           </div>

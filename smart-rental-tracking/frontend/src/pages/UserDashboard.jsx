@@ -51,24 +51,24 @@ export default function UserDashboard() {
         role={session?.role}
       />
 
-      <main className="mx-auto max-w-7xl space-y-10 px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-7xl space-y-8 px-3.5 py-6 sm:px-6 sm:py-8">
         {error && <Alert>{error}</Alert>}
 
         {/* Hero */}
-        <section className="overflow-hidden rounded-2xl bg-cat-ink px-6 py-7 text-white sm:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+        <section className="overflow-hidden rounded-2xl bg-cat-ink p-5 sm:p-8 text-white">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-cat-yellow">
                 Welcome back
               </p>
-              <h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
+              <h2 className="mt-1 font-display text-xl sm:text-2xl font-extrabold tracking-tight">
                 {session?.name}
               </h2>
-              <p className="mt-1 text-sm text-stone-400">
+              <p className="mt-1 text-xs sm:text-sm text-stone-400">
                 Reserve equipment and manage active rentals.
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2.5 sm:gap-3">
               <Stat label="Available now" value={equipment.length} />
               <Stat label="Active bookings" value={activeBookings} />
             </div>
@@ -79,7 +79,7 @@ export default function UserDashboard() {
         <section>
           <div className="mb-4 flex items-center justify-between">
             <h3 className="section-title">Available Equipment</h3>
-            <span className="text-sm text-stone-400">
+            <span className="text-xs sm:text-sm text-stone-400 font-medium">
               {equipment.length} unit{equipment.length === 1 ? "" : "s"}
             </span>
           </div>
@@ -92,7 +92,7 @@ export default function UserDashboard() {
               hint="Everything is currently on rent. Check back soon."
             />
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {equipment.map((eq) => (
                 <EquipmentCard key={eq.equipmentId} eq={eq} onBook={() => setSelected(eq)} />
               ))}
@@ -113,7 +113,7 @@ export default function UserDashboard() {
           ) : (
             <div className="space-y-4">
               {bookings.map((b) => (
-                <QRCard key={b.booking.bookingId} data={b} />
+                <QRCard key={b.booking.bookingId} data={b} onRefresh={load} />
               ))}
             </div>
           )}
@@ -137,11 +137,11 @@ export default function UserDashboard() {
 
 function Stat({ label, value }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-center">
-      <p className="font-display text-2xl font-extrabold leading-none text-cat-yellow">
+    <div className="flex-1 sm:flex-none rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
+      <p className="font-display text-xl sm:text-2xl font-extrabold leading-none text-cat-yellow">
         {value}
       </p>
-      <p className="mt-1 text-[11px] uppercase tracking-wide text-stone-400">
+      <p className="mt-1 text-[10px] sm:text-[11px] uppercase tracking-wide text-stone-400">
         {label}
       </p>
     </div>
@@ -154,20 +154,20 @@ function EquipmentCard({ eq, onBook }) {
 
   return (
     <div className="card group flex flex-col overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lift">
-      <div className="relative flex items-center justify-between border-b border-stone-100 bg-gradient-to-br from-stone-50 to-white px-5 py-4">
+      <div className="relative flex items-center justify-between border-b border-stone-100 bg-gradient-to-br from-stone-50 to-white px-4 py-3.5 sm:px-5 sm:py-4">
         <div>
-          <p className="font-display text-lg font-bold tracking-tight text-stone-900">
+          <p className="font-display text-base sm:text-lg font-bold tracking-tight text-stone-900">
             {eq.equipmentId}
           </p>
-          <p className="text-sm text-stone-500">{eq.type}</p>
+          <p className="text-xs sm:text-sm text-stone-500">{eq.type}</p>
         </div>
-        <span className="grid h-11 w-11 place-items-center rounded-xl bg-cat-yellow/15 text-cat-ink">
-          <Icon name="cube" className="h-6 w-6" />
+        <span className="grid h-10 w-10 sm:h-11 sm:w-11 place-items-center rounded-xl bg-cat-yellow/15 text-cat-ink">
+          <Icon name="cube" className="h-5 w-5 sm:h-6 sm:w-6" />
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 p-5">
-        <div className="flex items-center justify-between text-sm">
+      <div className="flex flex-1 flex-col gap-3.5 sm:gap-4 p-4 sm:p-5">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <span className="text-stone-500">Site</span>
           <span className="font-medium text-stone-800">{eq.siteId || "Unassigned"}</span>
         </div>
@@ -183,15 +183,15 @@ function EquipmentCard({ eq, onBook }) {
               style={{ width: `${util}%` }}
             />
           </div>
-          <div className="mt-1.5 flex justify-between text-[11px] text-stone-400">
+          <div className="mt-1.5 flex justify-between text-[10px] sm:text-[11px] text-stone-400">
             <span>{eq.engineHoursPerDay}h engine</span>
             <span>{eq.idleHoursPerDay}h idle</span>
           </div>
         </div>
 
-        <div className="mt-auto flex items-center justify-between pt-1">
+        <div className="mt-auto flex items-center justify-between pt-1 gap-2">
           <Badge status={eq.status} />
-          <button onClick={onBook} className="btn btn-dark btn-sm">
+          <button onClick={onBook} className="btn btn-dark btn-sm text-xs font-bold px-3 py-2">
             Book equipment
           </button>
         </div>

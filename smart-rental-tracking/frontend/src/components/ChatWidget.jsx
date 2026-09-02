@@ -82,24 +82,33 @@ export default function ChatWidget() {
       </button>
 
       {open && (
-        <div className="fixed bottom-24 right-5 z-40 flex h-[30rem] w-[22rem] max-w-[calc(100vw-2.5rem)] animate-scale-in flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-lift">
-          <div className="flex items-center gap-2.5 border-b border-stone-100 bg-cat-ink px-4 py-3 text-white">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-cat-yellow text-cat-ink">
-              <Icon name="spark" className="h-4 w-4" />
-            </span>
-            <div className="leading-tight">
-              <p className="text-sm font-bold">Rental Assistant</p>
-              <p className="text-[11px] text-stone-400">
-                {WEBHOOK_URL ? "Connected via n8n" : "Powered by Groq"}
-              </p>
+        <div className="fixed bottom-20 right-3 sm:right-5 z-40 flex h-[28rem] sm:h-[30rem] w-[calc(100vw-1.5rem)] sm:w-[22rem] max-w-[24rem] max-h-[calc(100vh-6rem)] animate-scale-in flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-lift">
+          <div className="flex items-center justify-between border-b border-stone-100 bg-cat-ink px-4 py-3 text-white">
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-cat-yellow text-cat-ink font-bold">
+                <Icon name="spark" className="h-4 w-4" />
+              </span>
+              <div className="leading-tight">
+                <p className="text-xs sm:text-sm font-bold">Rental Assistant</p>
+                <p className="text-[10px] text-stone-400">
+                  {WEBHOOK_URL ? "Connected via n8n" : "Powered by Groq"}
+                </p>
+              </div>
             </div>
+            <button
+              onClick={() => setOpen(false)}
+              className="grid h-7 w-7 place-items-center rounded-lg text-stone-400 hover:bg-white/10 hover:text-white"
+              aria-label="Close chat"
+            >
+              <Icon name="close" className="h-4 w-4" />
+            </button>
           </div>
 
-          <div className="flex-1 space-y-2.5 overflow-y-auto bg-stone-50 p-3.5">
+          <div className="flex-1 space-y-2.5 overflow-y-auto bg-stone-50 p-3 sm:p-3.5">
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${
+                className={`max-w-[88%] rounded-2xl px-3.5 py-2 text-xs sm:text-sm ${
                   m.from === "user"
                     ? "ml-auto rounded-br-sm bg-cat-ink text-white"
                     : "rounded-bl-sm bg-white text-stone-700 shadow-card"
@@ -119,7 +128,7 @@ export default function ChatWidget() {
                   <button
                     key={s}
                     onClick={() => send(s)}
-                    className="block w-full rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-left text-xs text-stone-600 transition hover:border-stone-300"
+                    className="block w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-left text-xs text-stone-600 transition hover:border-stone-300 min-h-[36px] active:bg-stone-50"
                   >
                     {s}
                   </button>
@@ -129,18 +138,18 @@ export default function ChatWidget() {
             <div ref={endRef} />
           </div>
 
-          <div className="flex items-center gap-2 border-t border-stone-100 p-2.5">
+          <div className="flex items-center gap-2 border-t border-stone-100 p-2.5 bg-white">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
               placeholder="Ask a question…"
-              className="flex-1 rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-stone-400"
+              className="flex-1 rounded-lg border border-stone-200 px-3 py-2 text-xs sm:text-sm outline-none focus:border-stone-400 min-h-[38px]"
             />
             <button
               onClick={() => send()}
               disabled={loading}
-              className="btn btn-dark btn-sm px-3 py-2"
+              className="btn btn-dark btn-sm px-3.5 py-2 min-h-[38px] text-xs font-bold"
             >
               Send
             </button>

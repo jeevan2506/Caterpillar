@@ -7,6 +7,7 @@ export function fmtDate(d) {
 
 // Overdue / due-soon are computed client-side from the expected return date.
 export function displayStatus(eq) {
+  if (eq.status === "booked") return "booked";
   if (eq.status !== "active") return eq.status; // available
   if (eq.checkInDate) {
     const due = new Date(eq.checkInDate);
@@ -19,12 +20,31 @@ export function displayStatus(eq) {
 }
 
 // Returns a list of anomaly objects for one equipment record.
-// opts: { telemetry: <matching telemetry record>, maintenance: [<all maintenance records>] }
+// opts: { telemetry: <matching telemetry record>, maintenance: [<all maintenance records>], bookings: [...] }
 export function getAnomalies(eq, opts = {}) {
   const { telemetry = null, maintenance = [], bookings = [] } = opts;
   const flags = [];
 
-  // 1. Unassigned — no site or no operator on record
+  // 1. Open maintenance — any machine with unresolved repairs
+  const openMaint = maintenance.filter(
+    (m) => m.equipmentId === eq.equipmentId && m.status !== "resolved"
+  );
+  if (openMaint.length) {
+    flags.push({
+      type: "OPEN MAINTENANCE",
+      reason: `${openMaint.length} unresolved maintenance record(s): ${openMaint
+        .map((m) => m.issueReported)
+        .join("; ")}.`,
+      severity: "medium",
+    });
+  }
+
+  // Only active / on-rent equipment is evaluated for operational anomalies
+  if (eq.status !== "active" && eq.status !== "overdue") {
+    return flags;
+  }
+
+  // 2. Unassigned — no site or no operator on record while active
   if (eq.siteId === null || eq.lastOperatorId === null) {
     flags.push({
       type: "UNASSIGNED",
@@ -33,7 +53,7 @@ export function getAnomalies(eq, opts = {}) {
     });
   }
 
-  // 2. Utilisation family — emit at most ONE flag, most specific first, so a
+  // 3. Utilisation family — emit at most ONE flag, most specific first, so a
   //    machine that is idle-heavy doesn't get three overlapping cards.
   const totalHours = eq.engineHoursPerDay + eq.idleHoursPerDay;
   const idleRatio = totalHours > 0 ? eq.idleHoursPerDay / totalHours : 0;
@@ -57,7 +77,7 @@ export function getAnomalies(eq, opts = {}) {
     });
   }
 
-  // 3. Rental integrity — operating days exceed the rental window
+  // 4. Rental integrity — operating days exceed the rental window
   if (eq.checkOutDate && eq.checkInDate) {
     const windowDays = Math.round(
       (new Date(eq.checkInDate) - new Date(eq.checkOutDate)) / 86400000
@@ -69,20 +89,6 @@ export function getAnomalies(eq, opts = {}) {
         severity: "high",
       });
     }
-  }
-
-  // 4. Open maintenance — a rented/tracked machine with unresolved repairs
-  const openMaint = maintenance.filter(
-    (m) => m.equipmentId === eq.equipmentId && m.status !== "resolved"
-  );
-  if (openMaint.length) {
-    flags.push({
-      type: "OPEN MAINTENANCE",
-      reason: `${openMaint.length} unresolved maintenance record(s): ${openMaint
-        .map((m) => m.issueReported)
-        .join("; ")}.`,
-      severity: "medium",
-    });
   }
 
   // 5a. Low fuel — machine will stall without a refuel

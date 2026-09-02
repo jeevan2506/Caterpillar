@@ -10,7 +10,7 @@ const equipmentSchema = new mongoose.Schema({
   siteId: { type: String, default: null },
   status: {
     type: String,
-    enum: ["available", "active", "overdue"],
+    enum: ["available", "booked", "active", "overdue"],
     default: "available",
   },
   checkOutDate: { type: Date, default: null },

@@ -32,34 +32,34 @@ export default function OperatorPage() {
         role={session?.role}
       />
 
-      <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <div className="mb-8 rounded-2xl bg-cat-ink px-6 py-7 text-white sm:px-8">
+      <main className="mx-auto max-w-3xl px-3.5 py-6 sm:px-6 sm:py-10">
+        <div className="mb-6 sm:mb-8 rounded-2xl bg-cat-ink p-5 sm:px-8 sm:py-7 text-white">
           <p className="text-xs font-semibold uppercase tracking-wider text-cat-yellow">
             Operator
           </p>
-          <h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight">
+          <h2 className="mt-1 font-display text-xl sm:text-2xl font-extrabold tracking-tight">
             Welcome, {session?.name}
           </h2>
-          <p className="mt-1 text-sm text-stone-400">
+          <p className="mt-1 text-xs sm:text-sm text-stone-400">
             Here's how operator dispatch works in the rental workflow.
           </p>
         </div>
 
         <div className="space-y-3">
           {STEPS.map((s, i) => (
-            <div key={i} className="card flex items-start gap-4 p-5">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cat-yellow/15 text-cat-ink">
-                <Icon name={s.icon} className="h-5 w-5" />
+            <div key={i} className="card flex items-start gap-3.5 sm:gap-4 p-4 sm:p-5">
+              <span className="grid h-9 w-9 sm:h-10 sm:w-10 shrink-0 place-items-center rounded-xl bg-cat-yellow/15 text-cat-ink">
+                <Icon name={s.icon} className="h-4 w-4 sm:h-5 sm:w-5" />
               </span>
               <div>
-                <p className="font-semibold text-stone-900">{s.title}</p>
-                <p className="mt-0.5 text-sm text-stone-500">{s.text}</p>
+                <p className="text-sm sm:text-base font-semibold text-stone-900">{s.title}</p>
+                <p className="mt-0.5 text-xs sm:text-sm text-stone-500 leading-relaxed">{s.text}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <p className="mt-8 text-center text-xs text-stone-400">
+        <p className="mt-6 sm:mt-8 text-center text-xs text-stone-400">
           The primary workflows in this demo are the User and Admin dashboards.
         </p>
       </main>

@@ -47,16 +47,16 @@ export default function MaintenancePanel() {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-1.5">
+    <div className="space-y-3.5">
+      <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
         {FILTERS.map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition ${
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition min-h-[36px] ${
               filter === f
-                ? "bg-cat-ink text-white"
-                : "bg-white text-stone-500 ring-1 ring-inset ring-stone-200 hover:text-stone-800"
+                ? "bg-cat-ink text-white shadow-sm"
+                : "bg-white text-stone-600 ring-1 ring-inset ring-stone-200 hover:text-stone-900 active:bg-stone-50"
             }`}
           >
             {f.replace(/-/g, " ")}
@@ -74,8 +74,8 @@ export default function MaintenancePanel() {
         </div>
       ) : (
         <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[880px] border-collapse">
+          <div className="table-container">
+            <table className="w-full min-w-[760px] border-collapse">
               <thead>
                 <tr className="border-b border-stone-200">
                   <th className="th">Equipment</th>
