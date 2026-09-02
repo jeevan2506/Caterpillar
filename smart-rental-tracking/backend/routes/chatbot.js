@@ -29,7 +29,7 @@ router.get("/chatbot-context", async (req, res) => {
     const timeoutSec = getTimeoutSeconds();
     const now = Date.now();
 
-    const telemetry = rawTelemetry.map((t) => {
+    const formattedTelemetry = rawTelemetry.map((t) => {
       const obj = t.toObject ? t.toObject() : { ...t };
       const lastSeenMs = obj.lastSeen ? new Date(obj.lastSeen).getTime() : 0;
       const diffSec = lastSeenMs > 0 ? Math.floor((now - lastSeenMs) / 1000) : null;
@@ -39,6 +39,26 @@ router.get("/chatbot-context", async (req, res) => {
         connectionStatus: isOnline ? "online" : "offline",
         offlineDurationSeconds: isOnline ? 0 : diffSec,
       };
+    });
+
+    const existingIds = new Set(formattedTelemetry.map((t) => t.equipmentId));
+    const telemetry = [...formattedTelemetry];
+
+    formattedTelemetry.forEach((item) => {
+      const eqId = item.equipmentId;
+      if (eqId.startsWith("EQ") && !eqId.startsWith("EQX")) {
+        const alias = "EQX" + eqId.slice(2);
+        if (!existingIds.has(alias)) {
+          existingIds.add(alias);
+          telemetry.push({ ...item, equipmentId: alias });
+        }
+      } else if (eqId.startsWith("EQX")) {
+        const alias = "EQ" + eqId.slice(3);
+        if (!existingIds.has(alias)) {
+          existingIds.add(alias);
+          telemetry.push({ ...item, equipmentId: alias });
+        }
+      }
     });
 
     let demandForecast = null;

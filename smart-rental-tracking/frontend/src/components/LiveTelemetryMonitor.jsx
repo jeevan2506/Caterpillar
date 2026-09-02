@@ -8,6 +8,7 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
   const [now, setNow] = useState(Date.now());
   const [autoPoll] = useState(true);
   const pollIntervalRef = useRef(null);
+  const reqSeqRef = useRef(0);
   // Display equipped / active machinery on rent, or fall back to available fleet
   const equippedList = equipment.filter(
     (e) => e.status === "active" || e.status === "overdue"
@@ -37,6 +38,11 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
         res.data.forEach((item) => {
           if (item && item.equipmentId) {
             newMap[item.equipmentId] = item;
+            if (item.equipmentId.startsWith("EQ") && !item.equipmentId.startsWith("EQX")) {
+              newMap["EQX" + item.equipmentId.slice(2)] = item;
+            } else if (item.equipmentId.startsWith("EQX")) {
+              newMap["EQ" + item.equipmentId.slice(3)] = item;
+            }
           }
         });
       }
