@@ -3,6 +3,7 @@ import Header from "../components/Header.jsx";
 import Badge from "../components/Badge.jsx";
 import BookingModal from "../components/BookingModal.jsx";
 import QRCard from "../components/QRCard.jsx";
+import OrderHistory from "../components/OrderHistory.jsx";
 import Icon from "../components/Icon.jsx";
 import { Loading, EmptyState, Alert } from "../components/ui.jsx";
 import { getEquipment, getUserBookings, getUser, updateUserPhone } from "../services/api.js";
@@ -182,6 +183,9 @@ export default function UserDashboard() {
             </div>
           )}
         </section>
+
+        {/* Order History */}
+        <OrderHistory userId={session.userId} />
       </main>
 
       {selected && (

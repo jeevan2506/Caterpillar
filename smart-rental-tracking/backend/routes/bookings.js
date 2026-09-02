@@ -268,6 +268,30 @@ router.get("/:userId", async (req, res) => {
   }
 });
 
+// GET /api/bookings/:userId/history - Fetch ALL bookings for a user (order history)
+router.get("/:userId/history", async (req, res) => {
+  try {
+    const bookings = await Booking.find({ userId: req.params.userId }).sort({
+      createdAt: -1,
+    });
+
+    const result = await Promise.all(
+      bookings.map(async (b) => {
+        const equipment = await Equipment.findOne({ equipmentId: b.equipmentId });
+        let operator = null;
+        if (b.assignedOperatorId) {
+          operator = await Operator.findOne({ operatorId: b.assignedOperatorId });
+        }
+        return { booking: b, equipment, operator };
+      })
+    );
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch order history", error: err.message });
+  }
+});
+
 // POST /api/bookings/:bookingId/send-reminder-sms - Send remaining time SMS alert to customer
 router.post("/:bookingId/send-reminder-sms", async (req, res) => {
   try {

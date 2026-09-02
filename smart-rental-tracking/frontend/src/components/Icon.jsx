@@ -18,6 +18,9 @@ const PATHS = {
   activity: "M22 12h-4l-3 9L9 3l-3 9H2",
   gauge: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Zm1-13h-2v5l4 2 1-1.7-3-1.3Z",
   fuel: "M3 22V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17M15 10h2a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.8a2 2 0 0 0-.6-1.4L20.8 7M3 11h12M6 7h6",
+  "chevron-down": "M6 9l6 6 6-6",
+  "chevron-up": "M18 15l-6-6-6 6",
+  clock: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 4v6l4 2",
 };
 
 export default function Icon({ name, className = "h-5 w-5", strokeWidth = 1.6 }) {

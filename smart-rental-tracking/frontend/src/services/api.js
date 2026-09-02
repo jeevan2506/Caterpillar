@@ -19,6 +19,7 @@ export const createOperator = (data) => api.post("/operators", data);
 // ---- Bookings ----
 export const createBooking = (data) => api.post("/bookings", data);
 export const getUserBookings = (userId) => api.get(`/bookings/${userId}`);
+export const getUserOrderHistory = (userId) => api.get(`/bookings/${userId}/history`);
 export const getPendingBookings = () => api.get("/bookings/pending/all");
 export const getAllBookings = () => api.get("/bookings/all");
 export const approveBooking = (bookingId, data) =>
