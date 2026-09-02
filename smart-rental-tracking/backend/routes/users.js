@@ -15,7 +15,10 @@ router.get("/", async (req, res) => {
 // GET /api/users/:userId
 router.get("/:userId", async (req, res) => {
   try {
-    const user = await User.findOne({ userId: req.params.userId });
+    const id = req.params.userId;
+    const user = await User.findOne({
+      $or: [{ userId: id }, { username: id }],
+    });
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
   } catch (err) {
@@ -26,7 +29,10 @@ router.get("/:userId", async (req, res) => {
 // PATCH /api/users/:userId
 router.patch("/:userId", async (req, res) => {
   try {
-    const user = await User.findOne({ userId: req.params.userId });
+    const id = req.params.userId;
+    const user = await User.findOne({
+      $or: [{ userId: id }, { username: id }],
+    });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     if (req.body.phone !== undefined) user.phone = req.body.phone;

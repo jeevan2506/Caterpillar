@@ -333,6 +333,7 @@ export default function AdminDashboard() {
               operators={data.operators}
               telemetry={data.telemetry}
               users={data.users}
+              onRefresh={load}
             />
           )}
 

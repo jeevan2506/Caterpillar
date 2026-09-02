@@ -7,7 +7,6 @@ import {
   validateScan,
   confirmPickup,
   confirmReturn,
-  getOperators,
 } from "../services/api.js";
 
 export default function AdminScanner({ onChange }) {
@@ -17,8 +16,6 @@ export default function AdminScanner({ onChange }) {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [siteId, setSiteId] = useState("");
-  const [operatorId, setOperatorId] = useState("");
-  const [operatorChoices, setOperatorChoices] = useState([]);
 
   async function runValidate(id) {
     const theId = (id || bookingId).trim();
@@ -26,7 +23,6 @@ export default function AdminScanner({ onChange }) {
     setError("");
     setSuccess("");
     setResult(null);
-    setOperatorChoices([]);
     setLoading(true);
     try {
       const res = await validateScan(theId);
@@ -34,17 +30,6 @@ export default function AdminScanner({ onChange }) {
         setError(res.data.message);
       } else {
         setResult({ ...res.data, bookingId: theId });
-        // For a Caterpillar-operator booking at pickup, load the operators the
-        // Admin is allowed to choose: certified for this equipment + available.
-        if (
-          res.data.action === "confirm-pickup" &&
-          res.data.booking.operatorRequest === "caterpillar-assigned" &&
-          res.data.equipment
-        ) {
-          getOperators(res.data.equipment.type)
-            .then((r) => setOperatorChoices(r.data))
-            .catch(() => setOperatorChoices([]));
-        }
       }
     } catch (err) {
       setError(err.response?.data?.message || "Validation failed.");
@@ -60,7 +45,6 @@ export default function AdminScanner({ onChange }) {
       await confirmPickup({
         bookingId: result.bookingId,
         siteId: siteId.trim() || undefined,
-        operatorId: operatorId.trim() || undefined,
       });
       setSuccess("Pickup confirmed — the equipment is now active on site.");
       reset();
@@ -91,8 +75,6 @@ export default function AdminScanner({ onChange }) {
     setResult(null);
     setBookingId("");
     setSiteId("");
-    setOperatorId("");
-    setOperatorChoices([]);
   }
 
   return (
@@ -224,44 +206,10 @@ export default function AdminScanner({ onChange }) {
                       <input
                         value={siteId}
                         onChange={(e) => setSiteId(e.target.value)}
-                        placeholder="e.g. S003"
+                        placeholder={result.equipment?.siteId || "e.g. S003"}
                         className="input"
                       />
                     </div>
-                    {result.booking.operatorRequest === "self" ? (
-                      <div>
-                        <label className="label">Operator ID (customer's own)</label>
-                        <input
-                          value={operatorId}
-                          onChange={(e) => setOperatorId(e.target.value)}
-                          placeholder="e.g. OP550"
-                          className="input"
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="label">
-                          Assign a Caterpillar operator ({result.equipment?.type})
-                        </label>
-                        <select
-                          value={operatorId}
-                          onChange={(e) => setOperatorId(e.target.value)}
-                          className="input"
-                        >
-                          <option value="">— assign later —</option>
-                          {operatorChoices.map((op) => (
-                            <option key={op.operatorId} value={op.operatorId}>
-                              {op.name} ({op.operatorId})
-                            </option>
-                          ))}
-                        </select>
-                        {operatorChoices.length === 0 && (
-                          <p className="mt-1 text-xs text-amber-600">
-                            No certified operator available — pick one later from Operators.
-                          </p>
-                        )}
-                      </div>
-                    )}
                   </div>
                   <button
                     onClick={doPickup}

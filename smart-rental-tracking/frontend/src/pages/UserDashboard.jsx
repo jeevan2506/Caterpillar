@@ -5,7 +5,7 @@ import BookingModal from "../components/BookingModal.jsx";
 import QRCard from "../components/QRCard.jsx";
 import Icon from "../components/Icon.jsx";
 import { Loading, EmptyState, Alert } from "../components/ui.jsx";
-import { getEquipment, getUserBookings } from "../services/api.js";
+import { getEquipment, getUserBookings, getUser, updateUserPhone } from "../services/api.js";
 import { getSession } from "../services/auth.js";
 
 export default function UserDashboard() {
@@ -15,21 +15,44 @@ export default function UserDashboard() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phoneSaving, setPhoneSaving] = useState(false);
+  const [phoneSuccess, setPhoneSuccess] = useState("");
 
   async function load() {
     setLoading(true);
     setError("");
     try {
-      const [eqRes, bkRes] = await Promise.all([
+      const [eqRes, bkRes, userRes] = await Promise.all([
         getEquipment({ status: "available" }),
         getUserBookings(session.userId),
+        getUser(session.userId).catch(() => ({ data: null })),
       ]);
       setEquipment(eqRes.data);
       setBookings(bkRes.data);
+      if (userRes.data?.phone) {
+        setPhone(userRes.data.phone);
+      }
     } catch {
       setError("Could not load data. Make sure the backend is running on port 5000.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSavePhone(e) {
+    e.preventDefault();
+    if (!phone.trim()) return;
+    setPhoneSaving(true);
+    setPhoneSuccess("");
+    try {
+      await updateUserPhone(session.userId, phone.trim());
+      setPhoneSuccess("Phone number saved to database for SMS alerts!");
+      setTimeout(() => setPhoneSuccess(""), 4000);
+    } catch {
+      setError("Failed to save phone number to database.");
+    } finally {
+      setPhoneSaving(false);
     }
   }
 
@@ -51,7 +74,7 @@ export default function UserDashboard() {
         role={session?.role}
       />
 
-      <main className="mx-auto max-w-7xl space-y-8 px-3.5 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto max-w-7xl space-y-6 sm:space-y-8 px-3.5 py-6 sm:px-6 sm:py-8">
         {error && <Alert>{error}</Alert>}
 
         {/* Hero */}
@@ -73,6 +96,47 @@ export default function UserDashboard() {
               <Stat label="Active bookings" value={activeBookings} />
             </div>
           </div>
+        </section>
+
+        {/* Phone & SMS Alert Setting Card */}
+        <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-900 font-bold">
+                📱
+              </span>
+              <div>
+                <h4 className="font-display text-sm font-bold text-stone-900">
+                  SMS Alert Mobile Number
+                </h4>
+                <p className="text-xs text-stone-500">
+                  Automatic due-date reminders and remaining time alerts will be sent to this number.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSavePhone} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+919876543210 or +18547770158"
+                className="input text-xs font-semibold py-1.5 w-48 sm:w-56"
+              />
+              <button
+                type="submit"
+                disabled={phoneSaving}
+                className="btn btn-primary btn-sm text-xs font-bold px-3.5 py-1.5 shrink-0"
+              >
+                {phoneSaving ? "Saving..." : "Save Phone"}
+              </button>
+            </form>
+          </div>
+          {phoneSuccess && (
+            <p className="mt-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+              ✓ {phoneSuccess}
+            </p>
+          )}
         </section>
 
         {/* Available Equipment */}
