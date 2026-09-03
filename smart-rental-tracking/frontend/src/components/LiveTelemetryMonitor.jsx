@@ -286,7 +286,7 @@ export default function LiveTelemetryMonitor({ equipment = [] }) {
             )}
 
             {/* Live Metrics Grid */}
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-4 grid gap-3 grid-cols-2 lg:grid-cols-4">
               {/* Machine State */}
               <div className="rounded-xl border border-stone-200/80 bg-white p-3.5 shadow-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400">

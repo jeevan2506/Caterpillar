@@ -116,18 +116,18 @@ export default function UserDashboard() {
               </div>
             </div>
 
-            <form onSubmit={handleSavePhone} className="flex items-center gap-2">
+            <form onSubmit={handleSavePhone} className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 w-full sm:w-auto">
               <input
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+919876543210 or +18547770158"
-                className="input text-xs font-semibold py-1.5 w-48 sm:w-56"
+                className="input text-xs font-semibold py-1.5 w-full sm:w-56 min-h-[40px]"
               />
               <button
                 type="submit"
                 disabled={phoneSaving}
-                className="btn btn-primary btn-sm text-xs font-bold px-3.5 py-1.5 shrink-0"
+                className="btn btn-primary btn-sm text-xs font-bold px-3.5 py-1.5 shrink-0 min-h-[40px]"
               >
                 {phoneSaving ? "Saving..." : "Save Phone"}
               </button>

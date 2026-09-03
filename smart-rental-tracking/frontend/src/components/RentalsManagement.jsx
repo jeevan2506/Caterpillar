@@ -460,7 +460,7 @@ export default function RentalsManagement({
       </div>
 
       {/* Filter Tabs Bar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 pb-2">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 pt-0.5 -mx-1 px-1">
         {FILTER_TABS.map((t) => {
           const active = tab === t.id;
           const count = counts[t.id] ?? (t.id === "all" ? counts.all : 0);
@@ -468,10 +468,10 @@ export default function RentalsManagement({
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
                 active
                   ? "bg-cat-ink text-white shadow-sm"
-                  : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                  : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50 active:bg-stone-100"
               }`}
             >
               <span>{t.label}</span>
@@ -511,11 +511,11 @@ export default function RentalsManagement({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col xs:flex-row items-center gap-2">
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="input text-xs w-1/2"
+              className="input text-xs w-full xs:w-1/2"
             >
               <option value="all">All Vehicle Types</option>
               <option value="Excavator">Excavator</option>
@@ -527,7 +527,7 @@ export default function RentalsManagement({
             <select
               value={siteFilter}
               onChange={(e) => setSiteFilter(e.target.value)}
-              className="input text-xs w-1/2"
+              className="input text-xs w-full xs:w-1/2"
             >
               <option value="all">All Sites</option>
               {siteOptions.map((s) => (
@@ -782,8 +782,8 @@ function RentalDetailModal({ item, onClose, onEditPhone, onRefreshData }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3.5 backdrop-blur-sm animate-fade-in">
-      <div className="flex max-h-[92vh] w-full max-w-3xl animate-scale-in flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-3.5 backdrop-blur-sm animate-fade-in">
+      <div className="flex max-h-[92vh] w-full max-w-3xl animate-scale-in flex-col overflow-hidden rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stone-100 bg-stone-50 px-5 py-4">
           <div className="flex items-center gap-3">
@@ -1068,8 +1068,8 @@ function EditPhoneModal({ user, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3.5 backdrop-blur-sm animate-fade-in">
-      <div className="flex max-h-[90vh] w-full max-w-sm animate-scale-in flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-3.5 backdrop-blur-sm animate-fade-in">
+      <div className="flex max-h-[90vh] w-full max-w-sm animate-scale-in flex-col overflow-hidden rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-stone-100 bg-stone-50 px-4 py-3.5">
           <h3 className="font-display text-sm font-bold text-stone-900">
             Edit User Phone in Database
